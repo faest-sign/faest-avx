@@ -1,0 +1,6 @@
+[submodule "XKCP"]
+	path = XKCP
+	url = git@github.com:XKCP/XKCP.git
+[submodule "Catch2"]
+	path = Catch2
+	url = https://github.com/catchorg/Catch2.git

@@ -1,0 +1,6 @@
+Reference_Implementation/**
+Additional_Implementations/**
+Common/**
+Submission/**
+*.sage.py
+!.gitkeep
