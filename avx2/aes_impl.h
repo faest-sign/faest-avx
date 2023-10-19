@@ -311,12 +311,12 @@ inline void rijndael256_fixed_key_ctr(
 
 	rijndael256_round(fixed_key, state, 1, num_keys * num_blocks, 0);
 	for (int round = 1; round < RIJNDAEL256_ROUNDS; ++round)
-		rijndael256_round(fixed_key, state, num_keys, num_blocks, round);
+		rijndael256_round(fixed_key, state, 1, num_keys * num_blocks, round);
 	rijndael256_round(fixed_key, state, 1, num_keys * num_blocks, RIJNDAEL256_ROUNDS);
 
 	for (size_t l = 0; l < num_keys; ++l)
 		for (uint32_t m = 0; m < num_blocks; ++m)
-			output[l * num_blocks + m] = block256_xor(output[l * num_blocks + m], keys[l]);
+			output[l * num_blocks + m] = block256_xor(state[l * num_blocks + m], keys[l]);
 }
 
 inline void rijndael192_fixed_key_ctr(
