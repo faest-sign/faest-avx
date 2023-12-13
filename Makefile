@@ -153,13 +153,16 @@ $$($(2)_test_objects)) $$($(2)_kat_objects)) $$($(2)_api_test_objects)) $(3)/api
 
 # target for test binary
 $(3)/$(2)_test : $$($(2)_test_objects) $$($(2)_objects) $$($(2)_asm_objects)
-	$(CXX) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+#	$(CXX) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+	$(CXX) -o $$@ $$^ $(LOADLIBES) $(LDFLAGS) $(LDLIBS)
 
 $(3)/PQCgenKAT_sign : $$($(2)_kat_objects) $$($(2)_objects) $$($(2)_asm_objects)
-	$(CC) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+#	$(CC) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+	$(CXX) -o $$@ $$^ $(LOADLIBES) $(LDFLAGS) $(LDLIBS)
 
 $(3)/api_test : $$($(2)_api_test_objects) $$($(2)_objects) $$($(2)_asm_objects)
-	$(CC) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+#	$(CC) -o $$@ $(LDFLAGS) $$^ $(LOADLIBES) $(LDLIBS)
+	$(CXX) -o $$@ $$^ $(LOADLIBES) $(LDFLAGS) $(LDLIBS)
 
 # targets to create (sub)directories
 $(3)/:

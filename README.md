@@ -8,6 +8,8 @@ The implementation is currently at version 1.0.
 ## Compilation
 
 Building requires GNU make 4.4 or newer.
+Requires gcc 13.1.0 or higher
+Do not forget to pull the submodules
 To build all enabled settings, run `make -j<number_of_threads>`.
 Note: it can take a long time to compile them all.
 To build just a single setting, run `make -j<number_of_threads> <setting_name>`.
