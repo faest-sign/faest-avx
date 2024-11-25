@@ -1,0 +1,245 @@
+#include "constants.hpp"
+#include "faest.hpp"
+#include "faest_keys.hpp"
+#include "parameters.hpp"
+
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+using namespace faest;
+
+// Here we check consistency of the computed constants with the FAEST specification.
+
+TEMPLATE_TEST_CASE("v1_faest_128", "[parameters]", v1::faest_128_s, v1::faest_128_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 40);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 40);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 448);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 10);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 200);
+    REQUIRE(OC::WITNESS_BITS == 1600);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 32);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 32);
+    if constexpr (std::is_same_v<P, v1::faest_128_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 5006);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 6336);
+    }
+}
+
+TEMPLATE_TEST_CASE("v1_faest_192", "[parameters]", v1::faest_192_s, v1::faest_192_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 32);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 32);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 448);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 2);
+    REQUIRE(OC::OWF_ROUNDS == 12);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 416);
+    REQUIRE(OC::WITNESS_BITS == 3264);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 56);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 64);
+    if constexpr (std::is_same_v<P, v1::faest_192_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 12744);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 16792);
+    }
+}
+
+TEMPLATE_TEST_CASE("v1_faest_256", "[parameters]", v1::faest_256_s, v1::faest_256_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 52);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 52);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 672);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 2);
+    REQUIRE(OC::OWF_ROUNDS == 14);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 500);
+    REQUIRE(OC::WITNESS_BITS == 4000);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 64);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 64);
+    if constexpr (std::is_same_v<P, v1::faest_256_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 22100);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 28400);
+    }
+}
+
+TEMPLATE_TEST_CASE("v1_faest_em_128", "[parameters]", v1::faest_em_128_s, v1::faest_em_128_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 128);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 10);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 160);
+    REQUIRE(OC::WITNESS_BITS == 1280);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 32);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 32);
+    if constexpr (std::is_same_v<P, v1::faest_em_128_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 4566);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 5696);
+    }
+}
+
+TEMPLATE_TEST_CASE("v1_faest_em_192", "[parameters]", v1::faest_em_192_s, v1::faest_em_192_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 192);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 24);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 12);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 288);
+    REQUIRE(OC::WITNESS_BITS == 2304);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 48);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 48);
+    if constexpr (std::is_same_v<P, v1::faest_em_192_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 10824);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 13912);
+    }
+}
+
+TEMPLATE_TEST_CASE("v1_faest_em_256", "[parameters]", v1::faest_em_256_s, v1::faest_em_256_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 256);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 32);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 14);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 448);
+    REQUIRE(OC::WITNESS_BITS == 3584);
+    REQUIRE(OC::QS_DEGREE == 2);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 64);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 64);
+    if constexpr (std::is_same_v<P, v1::faest_em_256_s>) {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 20956);
+    } else {
+        REQUIRE(FAEST_SIGNATURE_BYTES<P> == 26736);
+    }
+}
+
+TEMPLATE_TEST_CASE("v2_faest_128", "[parameters]", v2::faest_128_s, v2::faest_128_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 40);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 80);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 448);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 10);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 321);
+    REQUIRE(OC::WITNESS_BITS == 1280);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 32);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 32);
+}
+
+TEMPLATE_TEST_CASE("v2_faest_192", "[parameters]", v2::faest_192_s, v2::faest_192_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 32);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 64);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 448);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 2);
+    REQUIRE(OC::OWF_ROUNDS == 12);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 641);
+    REQUIRE(OC::WITNESS_BITS == 2496);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 40);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 48);
+}
+
+TEMPLATE_TEST_CASE("v2_faest_256", "[parameters]", v2::faest_256_s, v2::faest_256_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 52);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 104);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 672);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 2);
+    REQUIRE(OC::OWF_ROUNDS == 14);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 777);
+    REQUIRE(OC::WITNESS_BITS == 3104);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 48);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 48);
+}
+
+TEMPLATE_TEST_CASE("v2_faest_em_128", "[parameters]", v2::faest_em_128_s, v2::faest_em_128_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 128);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 16);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 10);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 241);
+    REQUIRE(OC::WITNESS_BITS == 960);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 32);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 32);
+}
+
+TEMPLATE_TEST_CASE("v2_faest_em_192", "[parameters]", v2::faest_em_192_s, v2::faest_em_192_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 192);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 24);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 12);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 433);
+    REQUIRE(OC::WITNESS_BITS == 1728);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 48);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 48);
+}
+
+TEMPLATE_TEST_CASE("v2_faest_em_256", "[parameters]", v2::faest_em_256_s, v2::faest_em_256_f)
+{
+    using P = TestType;
+    using OC = P::OWF_CONSTS;
+    REQUIRE(OC::OWF_KEY_SCHEDULE_SBOXES == 0);
+    REQUIRE(OC::OWF_KEY_SCHEDULE_CONSTRAINTS == 0);
+    REQUIRE(OC::OWF_KEY_WITNESS_BITS == 256);
+    REQUIRE(OC::OWF_BLOCK_SIZE == 32);
+    REQUIRE(OC::OWF_BLOCKS == 1);
+    REQUIRE(OC::OWF_ROUNDS == 14);
+    REQUIRE(OC::OWF_NUM_CONSTRAINTS == 673);
+    REQUIRE(OC::WITNESS_BITS == 2688);
+    REQUIRE(OC::QS_DEGREE == 3);
+    REQUIRE(FAEST_SECRET_KEY_BYTES<P> == 64);
+    REQUIRE(FAEST_PUBLIC_KEY_BYTES<P> == 64);
+}
