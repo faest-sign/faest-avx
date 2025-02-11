@@ -191,7 +191,7 @@ inline void rijndael192_fixed_key_ctr(const rijndael192_round_keys* __restrict__
         {
             block192 state = iv.add32(block192::set_low32(counters[l] + m, tweaks[l])) ^ keys[l];
             rijndael192_encrypt_block(fixed_key, &state);
-            output[l * num_blocks + m] = state;
+            output[l * num_blocks + m] = state ^ keys[l];
         }
     }
 }

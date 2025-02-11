@@ -1086,7 +1086,7 @@ void prg_leaf_hash<PRG>::hash(
 }
 
 template <typename PRG, size_t num_keys>
-static void stat_binding_leaf_hash_iv_impl(
+static void stat_binding_leaf_hash_impl(
     const typename PRG::key_t* keys_in, const typename PRG::iv_t& prg_iv,
     const std::array<poly_secpar<PRG::secpar_v>, 3>& hash_iv, typename PRG::tweak_t tweak,
     typename PRG::key_t** keys_out, unsigned char* hashes_out)

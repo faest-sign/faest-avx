@@ -130,7 +130,34 @@ TEMPLATE_TEST_CASE("unpack sk v2", "[faest]", ALL_FAEST_V2_INSTANCES)
     CHECK(witness == TVS::witness);
 }
 
+TEMPLATE_TEST_CASE("compute pk v2", "[faest]", ALL_FAEST_V2_INSTANCES)
+{
+    using P = TestType;
+    using TVS = faest_tvs<P>;
+    std::array<uint8_t, FAEST_PUBLIC_KEY_BYTES<P>> packed_pk;
+
+    REQUIRE(faest_pubkey<P>(packed_pk.data(), TVS::sk.data()));
+    CHECK(packed_pk == TVS::pk);
+}
+
 TEMPLATE_TEST_CASE("keygen/sign/verify v1", "[faest]", ALL_FAEST_V1_INSTANCES)
+{
+    using P = TestType;
+    std::array<uint8_t, FAEST_SECRET_KEY_BYTES<P>> packed_sk;
+    std::array<uint8_t, FAEST_PUBLIC_KEY_BYTES<P>> packed_pk;
+    std::array<uint8_t, FAEST_SIGNATURE_BYTES<P>> signature;
+    test_gen_keypair<P>(packed_pk.data(), packed_sk.data());
+
+    const std::string message =
+        "This document describes and specifies the FAEST digital signature algorithm.";
+
+    REQUIRE(faest_sign<P>(signature.data(), reinterpret_cast<const uint8_t*>(message.c_str()),
+                          message.size(), packed_sk.data(), NULL, 0));
+    REQUIRE(faest_verify<P>(signature.data(), reinterpret_cast<const uint8_t*>(message.c_str()),
+                            message.size(), packed_pk.data()));
+}
+
+TEMPLATE_TEST_CASE("keygen/sign/verify", "[faest]", ALL_FAEST_V2_INSTANCES)
 {
     using P = TestType;
     std::array<uint8_t, FAEST_SECRET_KEY_BYTES<P>> packed_sk;

@@ -6,7 +6,7 @@ test_sources = [
   'test_aes_tvs.cpp',
   'test_bavc_tvs.cpp',
   'test_faest.cpp',
-  'test_faest_v2.cpp',
+  'test_faest_experimental.cpp',
   'test_faest_tvs.cpp',
   'test_faest_v2_tvs.cpp',
   'test_gfsmall.cpp',
@@ -34,5 +34,7 @@ executable('tests',
 executable('bench',
   'bench_api.cpp',
   'bench_components.cpp',
+  'bench_leaf_hash.cpp',
+  'bench_variants.cpp',
   dependencies : [catch2_with_main_dep, faest_dep, randomness_os_dep]
 )

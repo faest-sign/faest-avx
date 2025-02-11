@@ -30,7 +30,7 @@ template <typename P> struct faest_scheme
             do
             {
                 rand_bytes(sk + sk_offset, FAEST_SECRET_KEY_BYTES<P> - sk_offset);
-            } while (!faest_pubkey<P>(pk, sk));
+            } while (!faest_seckey<P>(sk));
             rand_bytes(sk, sk_offset);
 
             bool success = faest_pubkey<P>(pk, sk);

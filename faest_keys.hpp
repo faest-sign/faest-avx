@@ -88,6 +88,9 @@ template <typename P>
 bool faest_unpack_sk_and_get_pubkey(uint8_t* pk_packed, const uint8_t* sk_packed,
                                     secret_key<P>* sk);
 
+// Check if a byte string is a valid secret key. sk_packed must be FAEST_SECRET_KEY_BYTES long.
+template <typename P> bool faest_seckey(const uint8_t* sk_packed);
+
 // Find the public key corresponding to a given secret key. Returns true if sk_packed is a valid
 // secret key, and false otherwise. For key generation, this function is intended to be called
 // repeatedly on random values of sk_packed until a valid key is found. pk_packed must be

@@ -5,11 +5,9 @@ project('faest', ['c', 'cpp'],
     'c_std=c23',
     'cpp_std=c++23',
     'warning_level=3',
-    # 'b_sanitize=address',
     'b_ndebug=false',
-    'b_lto=true',
-    'cpp_args=-O3 -march=native -mtune=native -g',
-    'c_args=-O3 -march=native -mtune=native -g',
+    'cpp_args=-march=native -mtune=native -g',
+    'c_args=-march=native -mtune=native -g',
   ],
 )
 

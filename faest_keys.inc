@@ -1,8 +1,11 @@
 #ifndef FAEST_KEYS_INC
 #define FAEST_KEYS_INC
 
+#include "aes.hpp"
+#include "constants.hpp"
 #include "faest_keys.hpp"
 #include "gfsmall.hpp"
+#include "parameters.hpp"
 
 namespace faest
 {
@@ -157,8 +160,7 @@ template <typename P> bool faest_compute_witness(secret_key<P>* sk)
     {
         for (size_t owf_block_i = 0; owf_block_i < OC::OWF_BLOCKS; ++owf_block_i)
         {
-            // Zero S-boxes during encryption without the norm proof are currently not supported.
-            if constexpr (!(is_owf_with_zero_sboxes(P::owf_v) && is_owf_with_norm_proof(P::owf_v)))
+            if constexpr (!is_owf_with_zero_sboxes(P::owf_v))
             {
                 // The block is about to go into the SBox, so check for zeros.
                 if (sk->pk.owf_output[owf_block_i].any_zeros())
@@ -172,10 +174,9 @@ template <typename P> bool faest_compute_witness(secret_key<P>* sk)
                     // "even" case in the spec
                     // compute the inverse norms and compress
                     std::array<uint8_t, OC::OWF_BLOCK_SIZE / 2> invnorms;
-                    gf256_gf16_batch_invnorm(
+                    gf256_gf16_batch_invnorm<OC::OWF_BLOCK_SIZE>(
                         invnorms.data(),
-                        reinterpret_cast<uint8_t*>(&sk->pk.owf_output[owf_block_i]),
-                        OC::OWF_BLOCK_SIZE);
+                        reinterpret_cast<uint8_t*>(&sk->pk.owf_output[owf_block_i]));
                     // store the inverse norms into the witness
                     memcpy(w_ptr + owf_block_i * witness_bytes_per_block, invnorms.data(),
                            OC::OWF_BLOCK_SIZE / 2);
@@ -262,10 +263,72 @@ bool faest_unpack_sk_and_get_pubkey(uint8_t* pk_packed, const uint8_t* sk_packed
     return true;
 }
 
+template <typename P> bool faest_seckey(const uint8_t* sk_packed)
+{
+    secret_key<P> sk;
+    if constexpr (!is_owf_with_zero_sboxes(P::owf_v))
+        return faest_unpack_secret_key<P>(&sk, sk_packed);
+    else if constexpr (is_owf_with_shrunk_keyspace(P::owf_v))
+        // check that the first two bits of the secret key are not both 1
+        return (0x3 & sk_packed[FAEST_IV_BYTES<P>]) != 0x3;
+    else
+        return true;
+}
+
 template <typename P> bool faest_pubkey(uint8_t* pk_packed, const uint8_t* sk_packed)
 {
     secret_key<P> sk;
-    return faest_unpack_sk_and_get_pubkey(pk_packed, sk_packed, &sk);
+    if constexpr (!is_owf_with_zero_sboxes(P::owf_v))
+    {
+        return faest_unpack_sk_and_get_pubkey(pk_packed, sk_packed, &sk);
+    }
+    else
+    {
+        if (!faest_seckey<P>(sk_packed))
+            return false;
+
+        using OC = P::OWF_CONSTS;
+        using owf_block = OC::block_t;
+        constexpr auto S = P::secpar_v;
+        constexpr auto sk_offset = FAEST_IV_BYTES<P>;
+        constexpr auto owf_output_offset = FAEST_IV_BYTES<P>;
+
+        std::array<owf_block, OC::OWF_BLOCKS> input;
+        std::array<owf_block, OC::OWF_BLOCKS> output;
+        memcpy(input.data(), sk_packed, sk_offset);
+
+        if constexpr (is_owf_with_ctr_input(P::owf_v) && OC::OWF_BLOCKS == 2)
+        {
+            input[1] = input[0];
+            reinterpret_cast<uint8_t*>(&input[1])[0] ^= 0x01;
+        }
+
+        if constexpr (is_owf_with_aes_em(P::owf_v))
+        {
+            block_secpar<S> em_key;
+            block_secpar<S> fixed_key;
+            memcpy(&em_key, sk_packed + sk_offset, P::secpar_bytes);
+            memcpy(&fixed_key, sk_packed, P::secpar_bytes);
+            rijndael_round_keys<S> round_keys;
+            const auto zero = block_secpar<S>::set_zero();
+            uint32_t tweak = 0;
+            uint32_t counter = 0;
+            rijndael_keygen<S>(&round_keys, fixed_key);
+            rijndael_fixed_key_ctr<S, 1, 1>(&round_keys, &em_key, zero, &tweak, &counter, output.data());
+        }
+        else
+        {
+            block_secpar<S> aes_key;
+            memcpy(&aes_key, sk_packed + sk_offset, P::secpar_bytes);
+            aes_round_keys<S> round_keys;
+            output = input;
+            aes_keygen_ecb<S, 1, OC::OWF_BLOCKS>(&aes_key, &round_keys, output.data());
+        }
+        memcpy(pk_packed, sk_packed, owf_output_offset);
+        memcpy(pk_packed + owf_output_offset, output.data(), output.size() * sizeof(output[0]));
+
+        return true;
+    }
 }
 
 } // namespace faest

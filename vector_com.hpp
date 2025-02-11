@@ -241,7 +241,7 @@ struct stat_binding_leaf_hash
     static void hash(const key_t* keys_in, const iv_t& iv, tweak_t tweak, tweak_t small_tweak,
                      key_t** keys_out, unsigned char* hashes_out)
     {
-        stat_binding_leaf_hash_iv_impl<PRG, num_keys>(
+        stat_binding_leaf_hash_impl<PRG, num_keys>(
             keys_in, iv.prg_iv, iv.universal_hash[small_tweak], tweak, keys_out, hashes_out);
     }
 };
