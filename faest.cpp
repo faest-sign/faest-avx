@@ -80,6 +80,31 @@ template void faest_unpack_public_key(public_key<v2::faest_em_192_f>*, const uin
 template void faest_unpack_public_key(public_key<v2::faest_em_256_s>*, const uint8_t*);
 template void faest_unpack_public_key(public_key<v2::faest_em_256_f>*, const uint8_t*);
 
+template bool faest_seckey<v1::faest_128_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_128_f>(const uint8_t*);
+template bool faest_seckey<v1::faest_192_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_192_f>(const uint8_t*);
+template bool faest_seckey<v1::faest_256_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_256_f>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_128_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_128_f>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_192_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_192_f>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_256_s>(const uint8_t*);
+template bool faest_seckey<v1::faest_em_256_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_128_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_128_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_192_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_192_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_256_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_256_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_128_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_128_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_192_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_192_f>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_256_s>(const uint8_t*);
+template bool faest_seckey<v2::faest_em_256_f>(const uint8_t*);
+
 template bool faest_pubkey<v1::faest_128_s>(uint8_t*, const uint8_t*);
 template bool faest_pubkey<v1::faest_128_f>(uint8_t*, const uint8_t*);
 template bool faest_pubkey<v1::faest_192_s>(uint8_t*, const uint8_t*);
