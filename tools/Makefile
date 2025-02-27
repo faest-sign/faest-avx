@@ -28,6 +28,7 @@ $(EXECUTABLE_NISTKAT): $(NISTKAT_SOURCES:.c=.o) $(LIBFAEST) randomness_randombyt
 clean:
 	rm -f \
 		$(wildcard *.o) \
+		$(wildcard avx2/*.o) \
 		$(wildcard sha3/*.o) \
 		$(wildcard NIST-KATs/*.o) \
 		$(wildcard tests/*.o) \
