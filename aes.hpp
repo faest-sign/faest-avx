@@ -6,7 +6,13 @@
 #include "constants.hpp"
 #include "util.hpp"
 
+#ifdef __AVX2__
 #include "avx2/aes_impl.hpp"
+#elifdef __aarch64__
+#include "aarch64/aes_impl.hpp"
+#else
+#error "unsupported architecture"
+#endif
 
 // Interface defined by aes_impl.h:
 

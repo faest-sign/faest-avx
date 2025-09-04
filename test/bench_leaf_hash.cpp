@@ -316,7 +316,7 @@ TEMPLATE_TEST_CASE("bench sign with leaf_hash", "[.][bench][leaf_hash]", ALL_BEN
     const std::string message =
         "This document describes and specifies the FAEST digital signature algorithm.";
     std::vector<unsigned char> signed_message(FP::CRYPTO_BYTES + message.size());
-    unsigned long long signed_message_len;
+    unsigned long long signed_message_len = 0;
 
     BENCHMARK("sign")
     {

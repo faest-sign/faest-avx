@@ -1,6 +1,7 @@
 #ifndef TEST_TEST_HPP
 #define TEST_TEST_HPP
 
+#include "block.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
 #include "faest_keys.inc"
@@ -72,37 +73,35 @@ template <typename T> inline T rand()
     return dist(rd);
 }
 
-template <> inline block128 rand<block128>()
+template <size_t bits> inline block<bits> rand_block()
 {
-    std::array<uint64_t, 2> data;
+    std::array<uint64_t, bits / 64> data;
     for (size_t i = 0; i < data.size(); ++i)
         data[i] = rand<uint64_t>();
 
-    block128 output;
+    block<bits> output;
     memcpy(&output, &data[0], sizeof(output));
     return output;
 }
-
+template <> inline block128 rand<block128>()
+{
+    return rand_block<128>();
+}
 template <> inline block192 rand<block192>()
 {
-    std::array<uint64_t, 3> data;
-    for (size_t i = 0; i < data.size(); ++i)
-        data[i] = rand();
-
-    block192 output;
-    memcpy(&output, &data[0], sizeof(output));
-    return output;
+    return rand_block<192>();
 }
-
 template <> inline block256 rand<block256>()
 {
-    std::array<uint64_t, 4> data;
-    for (size_t i = 0; i < data.size(); ++i)
-        data[i] = rand();
-
-    block256 output;
-    memcpy(&output, &data[0], sizeof(output));
-    return output;
+    return rand_block<256>();
+}
+template <> inline block384 rand<block384>()
+{
+    return rand_block<384>();
+}
+template <> inline block512 rand<block512>()
+{
+    return rand_block<512>();
 }
 
 template <typename T> inline std::vector<T> random_vector(std::size_t size)

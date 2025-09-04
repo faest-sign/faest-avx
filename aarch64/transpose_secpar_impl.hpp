@@ -46,20 +46,40 @@ static ALWAYS_INLINE void transposeVxN_8_chunk(block256* __restrict__ matrix,
         switch (i)
         {
         case 3:
-            out[0] = {_mm256_unpacklo_epi8(x.data, y.data)};
-            out[1] = {_mm256_unpackhi_epi8(x.data, y.data)};
+            out[0].data[0] = {vreinterpretq_u32_u8(vzip1q_u8(
+                vreinterpretq_u8_u32(x.data[0].data), vreinterpretq_u8_u32(y.data[0].data)))};
+            out[0].data[1] = {vreinterpretq_u32_u8(vzip1q_u8(
+                vreinterpretq_u8_u32(x.data[1].data), vreinterpretq_u8_u32(y.data[1].data)))};
+            out[1].data[0] = {vreinterpretq_u32_u8(vzip2q_u8(
+                vreinterpretq_u8_u32(x.data[0].data), vreinterpretq_u8_u32(y.data[0].data)))};
+            out[1].data[1] = {vreinterpretq_u32_u8(vzip2q_u8(
+                vreinterpretq_u8_u32(x.data[1].data), vreinterpretq_u8_u32(y.data[1].data)))};
             break;
         case 4:
-            out[0] = {_mm256_unpacklo_epi16(x.data, y.data)};
-            out[1] = {_mm256_unpackhi_epi16(x.data, y.data)};
+            out[0].data[0] = {vreinterpretq_u32_u16(vzip1q_u16(
+                vreinterpretq_u16_u32(x.data[0].data), vreinterpretq_u16_u32(y.data[0].data)))};
+            out[0].data[1] = {vreinterpretq_u32_u16(vzip1q_u16(
+                vreinterpretq_u16_u32(x.data[1].data), vreinterpretq_u16_u32(y.data[1].data)))};
+            out[1].data[0] = {vreinterpretq_u32_u16(vzip2q_u16(
+                vreinterpretq_u16_u32(x.data[0].data), vreinterpretq_u16_u32(y.data[0].data)))};
+            out[1].data[1] = {vreinterpretq_u32_u16(vzip2q_u16(
+                vreinterpretq_u16_u32(x.data[1].data), vreinterpretq_u16_u32(y.data[1].data)))};
             break;
         case 5:
-            out[0] = {_mm256_unpacklo_epi32(x.data, y.data)};
-            out[1] = {_mm256_unpackhi_epi32(x.data, y.data)};
+            out[0].data[0] = {vzip1q_u32(x.data[0].data, y.data[0].data)};
+            out[0].data[1] = {vzip1q_u32(x.data[1].data, y.data[1].data)};
+            out[1].data[0] = {vzip2q_u32(x.data[0].data, y.data[0].data)};
+            out[1].data[1] = {vzip2q_u32(x.data[1].data, y.data[1].data)};
             break;
         case 6:
-            out[0] = {_mm256_unpacklo_epi64(x.data, y.data)};
-            out[1] = {_mm256_unpackhi_epi64(x.data, y.data)};
+            out[0].data[0] = {vreinterpretq_u32_u64(vzip1q_u64(
+                vreinterpretq_u64_u32(x.data[0].data), vreinterpretq_u64_u32(y.data[0].data)))};
+            out[0].data[1] = {vreinterpretq_u32_u64(vzip1q_u64(
+                vreinterpretq_u64_u32(x.data[1].data), vreinterpretq_u64_u32(y.data[1].data)))};
+            out[1].data[0] = {vreinterpretq_u32_u64(vzip2q_u64(
+                vreinterpretq_u64_u32(x.data[0].data), vreinterpretq_u64_u32(y.data[0].data)))};
+            out[1].data[1] = {vreinterpretq_u32_u64(vzip2q_u64(
+                vreinterpretq_u64_u32(x.data[1].data), vreinterpretq_u64_u32(y.data[1].data)))};
             break;
         case 7:
             transpose2x2_128(&out[0], x, y);

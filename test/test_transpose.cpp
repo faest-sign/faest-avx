@@ -44,16 +44,16 @@ const std::array<uint64_t, 4> transpose2x2_64_out = {
 };
 
 const std::array<block128, 4> transpose2x2_128_in = {
-    block128{_mm_set_epi64x(0x0000000000000000, 0x0000000000000000)},
-    block128{_mm_set_epi64x(0x1111111111111111, 0x1111111111111111)},
-    block128{_mm_set_epi64x(0x2222222222222222, 0x2222222222222222)},
-    block128{_mm_set_epi64x(0x3333333333333333, 0x3333333333333333)},
+    block128::set_64(0x0000000000000000, 0x0000000000000000),
+    block128::set_64(0x1111111111111111, 0x1111111111111111),
+    block128::set_64(0x2222222222222222, 0x2222222222222222),
+    block128::set_64(0x3333333333333333, 0x3333333333333333),
 };
 const std::array<block128, 4> transpose2x2_128_out = {
-    block128{_mm_set_epi64x(0x0000000000000000, 0x0000000000000000)},
-    block128{_mm_set_epi64x(0x2222222222222222, 0x2222222222222222)},
-    block128{_mm_set_epi64x(0x1111111111111111, 0x1111111111111111)},
-    block128{_mm_set_epi64x(0x3333333333333333, 0x3333333333333333)},
+    block128::set_64(0x0000000000000000, 0x0000000000000000),
+    block128::set_64(0x2222222222222222, 0x2222222222222222),
+    block128::set_64(0x1111111111111111, 0x1111111111111111),
+    block128::set_64(0x3333333333333333, 0x3333333333333333),
 };
 
 // clang-format on
@@ -116,23 +116,24 @@ void print_bit_matrix(const uint8_t* mat, size_t stride, size_t rows, size_t col
 
 TEMPLATE_TEST_CASE("transpose 1536x", "[transpose]", secpar128_t, secpar192_t, secpar256_t)
 {
+    constexpr auto S = TestType::value;
     size_t rows = 1536;
     auto in = random_vector<uint8_t>(1536 * secpar_to_bytes(TestType::value));
     std::vector<uint8_t> out1(in.size(), 0);
     std::vector<uint8_t> out2(in.size(), 0);
 
     for (size_t i = 0; i < rows; ++i)
-        for (size_t j = 0; j < secpar_to_bits(TestType::value); ++j)
-            out1[(i * secpar_to_bits(TestType::value) + j) / 8] |=
+        for (size_t j = 0; j < secpar_to_bits(S); ++j)
+            out1[(i * secpar_to_bits(S) + j) / 8] |=
                 ((in[(j * rows + i) / 8] >> i % 8) & 1) << j % 8;
 
-    transpose_secpar<TestType::value>(in.data(), out2.data(), rows / 8, rows);
+    transpose_secpar<S>(in.data(), out2.data(), rows / 8, rows);
 
     // print_bit_matrix(in.data(), rows / 8, 64, 64);
     // std::cout << '\n';
-    // print_bit_matrix(out1.data(), SECURITY_PARAM / 8, 64, 128);
+    // print_bit_matrix(out1.data(), secpar_to_bytes(S), 64, 128);
     // std::cout << '\n';
-    // print_bit_matrix(out2.data(), SECURITY_PARAM / 8, 64, 128);
+    // print_bit_matrix(out2.data(), secpar_to_bytes(S), 64, 128);
     // std::cout << '\n';
 
     REQUIRE(memcmp(out1.data(), out2.data(), out2.size()) == 0);

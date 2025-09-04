@@ -1,4 +1,4 @@
-# Platform Specific FAEST Implementation for x86-64 (With ISA Extensions)
+# Platform Specific FAEST Implementation for x86-64 and AArch64 (With ISA Extensions)
 
 ## Versions
 
@@ -8,7 +8,7 @@ It is based on the previous C implementation, which you can find
 
 The major version number of the FAEST implementation matches the major version number of the FAEST
 specification it implements.
-The implementation is currently at version 2.0.1.
+The implementation is currently at version 2.0.2.
 
 ## Compilation
 
@@ -89,8 +89,9 @@ For more details, we refer to the [FAEST v2 specification](https://faest.info/re
 Currently our implementation is using the following set of instruction set extensions:
 
 - AVX2: The AVX2, AES-NI, PCLMULQDQ, and BMI1 instruction set extensions.
+- AArch64: Armv8.2-a with the AES instruction set extension.
 
 Additionally, we plan to support also the following sets of extensions that the implementation can
 use:
-- AVX2_VAES: The above, plus VAES and VPCLMULQDQ.
-- AVX512: The above, plus AVX512F and AVX512BW.
+- AVX2_VAES: The AVX2 above, plus VAES and VPCLMULQDQ.
+- AVX512: The AVX2 above, plus AVX512F and AVX512BW.

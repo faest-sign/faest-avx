@@ -4,7 +4,13 @@
 #include "block.hpp"
 #include "util.hpp"
 
+#ifdef __AVX2__
 #include "avx2/transpose_impl.hpp"
+#elifdef __aarch64__
+#include "aarch64/transpose_impl.hpp"
+#else
+#error "unsupported architecture"
+#endif
 
 namespace faest
 {

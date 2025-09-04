@@ -1,9 +1,10 @@
-catch2 = subproject('catch2')
+catch2 = subproject('catch2', default_options : ['tests=false'])
 catch2_with_main_dep = catch2.get_variable('catch2_with_main_dep')
 
 test_sources = [
   'test_aes.cpp',
   'test_aes_tvs.cpp',
+  'test_block.cpp',
   'test_bavc_tvs.cpp',
   'test_faest.cpp',
   'test_faest_experimental.cpp',
@@ -13,6 +14,7 @@ test_sources = [
   'test_gfsmall_tvs.cpp',
   'test_parameters.cpp',
   'test_polynomials.cpp',
+  'test_polynomials_tvs.cpp',
   'test_quicksilver.cpp',
   'test_owf_proof.cpp',
   'test_owf_proof_tools.cpp',
@@ -27,10 +29,12 @@ test_sources = [
   'test_vole_commit_tvs_v2.cpp',
   'test_witness.cpp',
 ]
-executable('tests',
+tests = executable('tests',
   test_sources,
   dependencies : [catch2_with_main_dep, faest_dep]
 )
+test('unit_tests', tests)
+
 executable('bench',
   'bench_api.cpp',
   'bench_components.cpp',

@@ -7,7 +7,7 @@
 
 extern "C"
 {
-#include "sha3/KeccakHashtimes4.h"
+#include "sha3/KeccakHash-times4.h"
 #include <KeccakHash.h>
 }
 
@@ -48,21 +48,21 @@ struct hash_state
 // Mostly copied from Picnic: Instances that work with 4 states in parallel.
 struct hash_state_x4
 {
-    Keccak_HashInstancetimes4 ctx;
+    Keccak_HashInstance_x4 ctx;
 
     inline void init(secpar s)
     {
         if (secpar_to_bits(s) <= 128)
-            Keccak_HashInitializetimes4_SHAKE128(&this->ctx);
+            Keccak_HashInitialize_x4_SHAKE128(&this->ctx);
         else
-            Keccak_HashInitializetimes4_SHAKE256(&this->ctx);
+            Keccak_HashInitialize_x4_SHAKE256(&this->ctx);
     }
 
     inline void update(const void** data, size_t size)
     {
         const uint8_t* data_casted[4] = {(const uint8_t*)data[0], (const uint8_t*)data[1],
                                          (const uint8_t*)data[2], (const uint8_t*)data[3]};
-        Keccak_HashUpdatetimes4(&this->ctx, data_casted, size << 3);
+        Keccak_HashUpdate_x4(&this->ctx, data_casted, size << 3);
     }
 
     inline void update_4(const void* data0, const void* data1, const void* data2, const void* data3,
@@ -89,8 +89,8 @@ struct hash_state_x4
     {
         uint8_t* buffer_casted[4] = {(uint8_t*)buffer[0], (uint8_t*)buffer[1], (uint8_t*)buffer[2],
                                      (uint8_t*)buffer[3]};
-        Keccak_HashFinaltimes4(&this->ctx, NULL);
-        Keccak_HashSqueezetimes4(&this->ctx, buffer_casted, buflen << 3);
+        Keccak_HashFinal_x4(&this->ctx, NULL);
+        Keccak_HashSqueeze_x4(&this->ctx, buffer_casted, buflen << 3);
     }
 
     inline void finalize_4(void* buffer0, void* buffer1, void* buffer2, void* buffer3,

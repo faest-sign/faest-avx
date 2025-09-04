@@ -1,0 +1,20 @@
+[binaries]
+c = 'aarch64-linux-android35-clang'
+cpp = 'aarch64-linux-android35-clang++'
+ar = 'llvm-ar'
+nm = 'llvm-nm'
+strip = 'llvm-strip'
+pkgconfig = 'pkg-config'
+pkg-config = 'pkg-config'
+
+[host_machine]
+system = 'android'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+
+[built-in options]
+c_args = ['-march=armv8.2-a+aes', '-mtune=generic', '-g', '--sysroot=/opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot']
+cpp_args = c_args
+#link_args = ['-L' '/opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/35/']
+

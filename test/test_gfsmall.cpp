@@ -16,6 +16,14 @@ TEST_CASE("gf256_compress_gf16_subfield", "[gfsmall]")
     }
 }
 
+TEST_CASE("gf256_batch_compress_gf16_subfield", "[gfsmall]")
+{
+    block128 input;
+    memcpy(&input, GF16_SUBFIELD_ELEMENTS.data(), sizeof(input));
+    const auto output = gf256_batch_compress_gf16_subfield(input);
+    REQUIRE(memcmp(&output, GF16_SUBFIELD_ELEMENTS_COMPRESSED.data(), sizeof(output)) == 0);
+}
+
 TEST_CASE("gf256_decompress_gf16_subfield", "[gfsmall]")
 {
     for (size_t i = 0; i < GF16_SUBFIELD_ELEMENTS.size(); ++i)
@@ -41,6 +49,22 @@ TEST_CASE("gf256_invnorm", "[gfsmall]")
     {
         REQUIRE(gf256_gf16_invnorm(static_cast<uint8_t>(i)) == GF_256_INVNORMS[i]);
     }
+}
+
+TEST_CASE("compress_gf16_vector", "[gfsmall]")
+{
+    block128 input;
+    memcpy(&input, GF16_SUBFIELD_ELEMENTS_COMPRESSED.data(), sizeof(input));
+    const auto output = compress_gf16_vector(input);
+    const auto* out_p = reinterpret_cast<const uint8_t*>(&output);
+    for (size_t i = 0; i < sizeof(input) / 2; ++i)
+    {
+        const uint8_t a = out_p[i] & 0x0f;
+        const uint8_t b = out_p[i] >> 4;
+        REQUIRE(a == GF16_SUBFIELD_ELEMENTS_COMPRESSED[2 * i]);
+        REQUIRE(b == GF16_SUBFIELD_ELEMENTS_COMPRESSED[2 * i + 1]);
+    }
+    REQUIRE(output.get_high64() == 0);
 }
 
 TEST_CASE("gf256_batch_invnorm", "[gfsmall]")

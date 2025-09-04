@@ -1,6 +1,7 @@
 #ifndef QUICKSILVER_HPP
 #define QUICKSILVER_HPP
 
+#include <algorithm>
 #include <array>
 #include "polynomials.hpp"
 #include "poly2d.hpp"

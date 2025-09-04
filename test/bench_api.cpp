@@ -27,7 +27,7 @@ TEMPLATE_TEST_CASE("bench sign", "[.][bench]", ALL_FAEST_INSTANCES)
     const std::string message =
         "This document describes and specifies the FAEST digital signature algorithm.";
     std::vector<unsigned char> signed_message(FP::CRYPTO_BYTES + message.size());
-    unsigned long long signed_message_len;
+    unsigned long long signed_message_len = 0;
 
     BENCHMARK("sign")
     {
@@ -49,12 +49,12 @@ TEMPLATE_TEST_CASE("bench verify", "[.][bench]", ALL_FAEST_INSTANCES)
     const std::string message =
         "This document describes and specifies the FAEST digital signature algorithm.";
     std::vector<unsigned char> signed_message(FP::CRYPTO_BYTES + message.size());
-    unsigned long long signed_message_len;
+    unsigned long long signed_message_len = 0;
     FP::crypto_sign(signed_message.data(), &signed_message_len,
                     reinterpret_cast<const unsigned char*>(message.data()), message.size(),
                     sk.data());
     std::vector<unsigned char> opened_message(message.size());
-    unsigned long long opened_message_len;
+    unsigned long long opened_message_len = 0;
 
     BENCHMARK("verify")
     {

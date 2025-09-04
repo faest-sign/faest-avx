@@ -14,7 +14,6 @@
 #include "vole_check.hpp"
 #include "vole_commit.hpp"
 #include <cassert>
-#include <cstdalign>
 #include <cstdlib>
 
 namespace faest

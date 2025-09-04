@@ -3,7 +3,14 @@
 
 // Constants that are used in the implementation
 
+#ifdef __AVX2__
 #include "avx2/constants_impl.hpp"
+#elifdef __aarch64__
+#include "aarch64/constants_impl.hpp"
+#else
+#error "unsupported architecture"
+#endif
+
 #include "parameters.hpp"
 
 namespace faest

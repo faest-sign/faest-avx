@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/XKCP/XKCP.git
-revision = 64404beeeb261b08a1076fe2f076e4e28dd9b040
+revision = 716f007dd73ef28d357b8162173646be574ad1b7
 depth = 1
 patch_directory = xkcp
 

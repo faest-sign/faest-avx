@@ -6,7 +6,7 @@ project('faest', ['c', 'cpp'],
     'cpp_std=c++23',
     'warning_level=3',
     'b_ndebug=false',
-    'cpp_args=-march=native -mtune=native -g',
+    'cpp_args=-march=native -mtune=native -g  -Wno-psabi',
     'c_args=-march=native -mtune=native -g',
   ],
 )
@@ -31,12 +31,12 @@ randomness_os_dep = declare_dependency(
 
 faest_include_dirs = include_directories(['.'])
 faest_sources = [
-  'avx2/aes_impl.cpp',
+  'aes.cpp',
   'faest.cpp',
   'owf_proof.cpp',
   'polynomials_constants.cpp',
-  'sha3/KeccakHashtimes4.c',
-  'sha3/KeccakSpongetimes4.c',
+  'sha3/KeccakHash-times4.c',
+  'sha3/KeccakSponge-times4.c',
   'small_vole.cpp',
   'vector_com.cpp',
   'vole_commit.cpp',

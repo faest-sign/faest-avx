@@ -7,7 +7,6 @@
 #include "prgs.hpp"
 #include "small_vole.hpp"
 #include "vector_com.inc"
-#include <cstdalign>
 #include <cstdlib>
 
 namespace faest
