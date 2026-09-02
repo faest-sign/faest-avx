@@ -10,86 +10,188 @@
 namespace faest
 {
 
+template <typename P>
+    requires(is_owf_with_aes_ecb(P::owf_v))
+void public_key<P>::pack(uint8_t* packed_pk_) const
+{
+    const auto packed_pk = mutable_packed_pk_view<P>(packed_pk_);
+
+    // Copy AES input
+    if constexpr (is_owf_with_ctr_input(P::owf_v) && P::OWF_CONSTS::OWF_BLOCKS > 1)
+    {
+        static_assert(sizeof(this->owf_input[0]) == decltype(packed_pk.aes_input())::extent);
+        memcpy(packed_pk.aes_input().data(), &this->owf_input[0], packed_pk.aes_input().size());
+    }
+    else
+    {
+        static_assert(sizeof(this->owf_input) == decltype(packed_pk.aes_input())::extent);
+        memcpy(packed_pk.aes_input().data(), &this->owf_input, packed_pk.aes_input().size());
+    }
+
+    // Copy AES output
+    static_assert(sizeof(this->owf_output) == decltype(packed_pk.owf_output())::extent);
+    memcpy(packed_pk.owf_output().data(), &this->owf_output, packed_pk.owf_output().size());
+}
+
+template <typename P>
+    requires(is_owf_with_aes_ecb(P::owf_v))
+public_key<P> public_key<P>::unpack(const uint8_t* packed_pk_)
+{
+    const auto packed_pk = packed_pk_view<P>(packed_pk_);
+
+    public_key<P> unpacked;
+
+    // Copy AES input
+    if constexpr (is_owf_with_ctr_input(P::owf_v) && P::OWF_CONSTS::OWF_BLOCKS > 1)
+    {
+        // Copy first block
+        static_assert(sizeof(unpacked.owf_input[0]) == decltype(packed_pk.aes_input())::extent);
+        memcpy(&unpacked.owf_input[0], packed_pk.aes_input().data(), packed_pk.aes_input().size());
+        // Compute the second block as the first XOR 1.
+        unpacked.owf_input[1] = unpacked.owf_input[0];
+        reinterpret_cast<uint8_t*>(&unpacked.owf_input[1])[0] ^= 0x01;
+    }
+    else
+    {
+        static_assert(sizeof(unpacked.owf_input) == decltype(packed_pk.aes_input())::extent);
+        memcpy(&unpacked.owf_input, packed_pk.aes_input().data(), packed_pk.aes_input().size());
+    }
+
+    // Copy AES output
+    static_assert(sizeof(unpacked.owf_output) == decltype(packed_pk.owf_output())::extent);
+    memcpy(&unpacked.owf_output, packed_pk.owf_output().data(), packed_pk.owf_output().size());
+
+    return unpacked;
+}
+
+template <typename P>
+    requires(is_owf_with_aes_em(P::owf_v))
+void public_key<P>::pack(uint8_t* packed_pk_) const
+{
+    const auto packed_pk = mutable_packed_pk_view<P>(packed_pk_);
+
+    // Copy fixed key
+    static_assert(sizeof(this->fixed_key) == decltype(packed_pk.fixed_key())::extent);
+    memcpy(packed_pk.fixed_key().data(), &this->fixed_key, packed_pk.fixed_key().size());
+
+    // Copy AES/Rijndael output
+    static_assert(sizeof(this->owf_output) == decltype(packed_pk.owf_output())::extent);
+    memcpy(packed_pk.owf_output().data(), &this->owf_output, packed_pk.owf_output().size());
+}
+
+template <typename P>
+    requires(is_owf_with_aes_em(P::owf_v))
+public_key<P> public_key<P>::unpack(const uint8_t* packed_pk_)
+{
+    const auto packed_pk = packed_pk_view<P>(packed_pk_);
+
+    public_key<P> unpacked;
+
+    // Copy fixed key
+    static_assert(sizeof(unpacked.fixed_key) == decltype(packed_pk.fixed_key())::extent);
+    memcpy(&unpacked.fixed_key, packed_pk.fixed_key().data(), packed_pk.fixed_key().size());
+
+    // Copy AES/Rijndael output
+    static_assert(sizeof(unpacked.owf_output) == decltype(packed_pk.owf_output())::extent);
+    memcpy(&unpacked.owf_output, packed_pk.owf_output().data(), packed_pk.owf_output().size());
+
+    // Compute the key schedule of the public fixed key.
+    rijndael_keygen<P::secpar_v>(&unpacked.fixed_key_round_keys, unpacked.fixed_key);
+
+    return unpacked;
+}
+
+template <typename P>
+    requires(is_owf_with_aes_ecb(P::owf_v))
+void secret_key<P>::pack(uint8_t* packed_sk_) const
+{
+    const auto packed_sk = mutable_packed_sk_view<P>(packed_sk_);
+}
+
+template <typename P>
+    requires(is_owf_with_aes_em(P::owf_v))
+void secret_key<P>::pack(uint8_t* packed_sk_) const
+{
+    const auto packed_sk = mutable_packed_sk_view<P>(packed_sk_);
+}
+
+template <typename P>
+    requires(is_owf_with_aes_ecb(P::owf_v))
+std::expected<secret_key<P>, std::monostate> secret_key<P>::unpack(const uint8_t* packed_sk_)
+{
+    const auto packed_sk = packed_sk_view<P>(packed_sk_);
+    secret_key<P> unpacked;
+
+    // Copy the input block(s).
+    memcpy(&unpacked.pk.owf_input, packed_sk.aes_input().data(), packed_sk.aes_input().size());
+    if constexpr (is_owf_with_ctr_input(P::owf_v) && P::OWF_CONSTS::OWF_BLOCKS > 1)
+    {
+        // If we use the CTR inputs, then the packed sk only contains the first block and we
+        // compute the second block as the first XOR 1.
+        static_assert(sizeof(unpacked.pk.owf_input[0]) == decltype(packed_sk.aes_input())::extent);
+        unpacked.pk.owf_input[1] = unpacked.pk.owf_input[0];
+        reinterpret_cast<uint8_t*>(&unpacked.pk.owf_input[1])[0] ^= 0x01;
+    }
+    else
+    {
+        // Otherwise, we should have copied all blocks from the packed key.
+        static_assert(sizeof(unpacked.pk.owf_input) == decltype(packed_sk.aes_input())::extent);
+    }
+
+    // Load the secret key.
+    memcpy(&unpacked.sk, packed_sk.aes_key().data(), packed_sk.aes_key().size());
+    static_assert(sizeof(unpacked.sk) == decltype(packed_sk.aes_key())::extent);
+
+    // Compute the key schedule of the secret AES key.
+    aes_keygen<P::secpar_v>(&unpacked.round_keys, unpacked.sk);
+
+    if (faest_compute_witness(&unpacked))
+        return unpacked;
+    else
+        return {};
+}
+
+template <typename P>
+    requires(is_owf_with_aes_em(P::owf_v))
+std::expected<secret_key<P>, std::monostate> secret_key<P>::unpack(const uint8_t* packed_sk_)
+{
+    const auto packed_sk = packed_sk_view<P>(packed_sk_);
+    secret_key<P> unpacked;
+
+    // Load the Rijndael fixed key.
+    memcpy(&unpacked.pk.fixed_key, packed_sk.fixed_key().data(), packed_sk.fixed_key().size());
+    static_assert(sizeof(unpacked.pk.fixed_key) == decltype(packed_sk.fixed_key())::extent);
+    // Load the Even-Mansour key.
+    memcpy(&unpacked.sk, packed_sk.em_key().data(), packed_sk.em_key().size());
+    static_assert(sizeof(unpacked.sk) == decltype(packed_sk.em_key())::extent);
+    // Compute the key schedule of the public fixed key.
+    rijndael_keygen<P::secpar_v>(&unpacked.pk.fixed_key_round_keys, unpacked.pk.fixed_key);
+
+    if (faest_compute_witness(&unpacked))
+        return unpacked;
+    else
+        return {};
+}
+
 template <typename P> bool faest_unpack_secret_key(secret_key<P>* unpacked, const uint8_t* packed)
 {
-    constexpr auto sk_offset = FAEST_IV_BYTES<P>;
-    if constexpr (is_owf_with_aes_ecb(P::owf_v) && is_owf_with_ctr_input(P::owf_v) &&
-                  P::secpar_bits > 128)
-    {
-        // Load the first input block.
-        memcpy(&unpacked->pk.owf_input[0], packed, sizeof(unpacked->pk.owf_input[0]));
-        static_assert(sizeof(unpacked->pk.owf_input[0]) == sk_offset);
-        // Compute the second block as the first XOR 1.
-        unpacked->pk.owf_input[1] = unpacked->pk.owf_input[0];
-        reinterpret_cast<uint8_t*>(&unpacked->pk.owf_input[1])[0] ^= 0x01;
-    }
-    else
-    {
-        // Load all input blocks.
-        memcpy(&unpacked->pk.owf_input, packed, sizeof(unpacked->pk.owf_input));
-        static_assert(sizeof(unpacked->pk.owf_input) == sk_offset);
-    }
-    // Load the secret key.
-    memcpy(&unpacked->sk, packed + sk_offset, sizeof(unpacked->sk));
-
-    if constexpr (is_owf_with_aes_ecb(P::owf_v))
-        // Compute the key schedule of the secret AES key.
-        aes_keygen<P::secpar_v>(&unpacked->round_keys, unpacked->sk);
-    else if constexpr (is_owf_with_aes_em(P::owf_v))
-        // Compute the key schedule of the public fixed key.
-        rijndael_keygen<P::secpar_v>(&unpacked->pk.fixed_key, unpacked->pk.owf_input[0]);
-    else
-        static_assert(false, "unsupported OWF");
-
-    return faest_compute_witness(unpacked);
+    const auto sk = secret_key<P>::unpack(packed);
+    if (!sk)
+        return false;
+    *unpacked = *sk;
+    return true;
 }
 
-template <typename P> void faest_pack_public_key(uint8_t* packed, const public_key<P>* unpacked)
+template <typename P>
+ALWAYS_INLINE void faest_pack_public_key(uint8_t* packed, const public_key<P>* unpacked)
 {
-    constexpr auto owf_output_offset = FAEST_IV_BYTES<P>;
-    if constexpr (is_owf_with_aes_ecb(P::owf_v) && is_owf_with_ctr_input(P::owf_v) &&
-                  P::secpar_bits > 128)
-    {
-        // Store only the first input block.
-        memcpy(packed, &unpacked->owf_input[0], sizeof(unpacked->owf_input[0]));
-        static_assert(sizeof(unpacked->owf_input[0]) == owf_output_offset);
-    }
-    else
-    {
-        // Store only all input blocks.
-        memcpy(packed, &unpacked->owf_input, sizeof(unpacked->owf_input));
-        static_assert(sizeof(unpacked->owf_input) == owf_output_offset);
-    }
-    // Store the OWF output block(s).
-    memcpy(packed + owf_output_offset, &unpacked->owf_output, sizeof(unpacked->owf_output));
+    unpacked->pack(packed);
 }
 
-template <typename P> void faest_unpack_public_key(public_key<P>* unpacked, const uint8_t* packed)
+template <typename P>
+ALWAYS_INLINE void faest_unpack_public_key(public_key<P>* unpacked, const uint8_t* packed_)
 {
-    constexpr auto owf_output_offset = FAEST_IV_BYTES<P>;
-    // Copy the OWF input.
-    if constexpr (is_owf_with_aes_ecb(P::owf_v) && is_owf_with_ctr_input(P::owf_v) &&
-                  P::secpar_bits > 128)
-    {
-        // Load the first block.
-        memcpy(&unpacked->owf_input[0], packed, sizeof(unpacked->owf_input[0]));
-        static_assert(sizeof(unpacked->owf_input[0]) == owf_output_offset);
-        // Compute the second block as the first XOR 1.
-        unpacked->owf_input[1] = unpacked->owf_input[0];
-        reinterpret_cast<uint8_t*>(&unpacked->owf_input[1])[0] ^= 0x01;
-    }
-    else
-    {
-        // Load all input blocks from the packed representation.
-        memcpy(&unpacked->owf_input, packed, sizeof(unpacked->owf_input));
-        static_assert(sizeof(unpacked->owf_input) == owf_output_offset);
-    }
-    // Load the OWF output block(s).
-    memcpy(&unpacked->owf_output, packed + owf_output_offset, sizeof(unpacked->owf_output));
-
-    if constexpr (is_owf_with_aes_em(P::owf_v))
-        // Compute the key schedule of the public fixed key.
-        rijndael_keygen<P::secpar_v>(&unpacked->fixed_key, unpacked->owf_input[0]);
+    *unpacked = public_key<P>::unpack(packed_);
 }
 
 template <typename P> bool faest_compute_witness(secret_key<P>* sk)
@@ -148,7 +250,7 @@ template <typename P> bool faest_compute_witness(secret_key<P>* sk)
     else if constexpr (is_owf_with_aes_em(P::owf_v))
     {
         static_assert(OC::OWF_BLOCKS == 1, "");
-        sk->pk.owf_output[0] = sk->pk.fixed_key.keys[0] ^ sk->sk;
+        sk->pk.owf_output[0] = sk->pk.fixed_key_round_keys.keys[0] ^ sk->sk;
     }
 
     constexpr size_t witness_bytes_per_block = OC::OWF_ENC_WITNESS_BITS_PER_BLOCK / 8;
@@ -193,15 +295,15 @@ template <typename P> bool faest_compute_witness(secret_key<P>* sk)
             {
                 if constexpr (P::secpar_v == secpar::s128)
                     aes_round_function<secpar::s128>(
-                        &sk->pk.fixed_key, &sk->pk.owf_output[owf_block_i], &after_sbox, round_j);
+                        &sk->pk.fixed_key_round_keys, &sk->pk.owf_output[owf_block_i], &after_sbox, round_j);
                 else if constexpr (P::secpar_v == secpar::s192)
-                    rijndael192_round_function(&sk->pk.fixed_key, &sk->pk.owf_output[owf_block_i],
+                    rijndael192_round_function(&sk->pk.fixed_key_round_keys, &sk->pk.owf_output[owf_block_i],
                                                &after_sbox, round_j);
                 else if constexpr (P::secpar_v == secpar::s256)
-                    rijndael256_round_function(&sk->pk.fixed_key, &sk->pk.owf_output[owf_block_i],
+                    rijndael256_round_function(&sk->pk.fixed_key_round_keys, &sk->pk.owf_output[owf_block_i],
                                                &after_sbox, round_j);
             }
-            if constexpr (is_owf_with_norm_proof(P::owf_v))
+            if constexpr (is_owf_with_norm_proof(P::owf_v) || is_owf_with_deg7_proof(P::owf_v))
             {
                 if (round_j < OC::OWF_ROUNDS && ((round_j & 1) == 0))
                 {
@@ -220,7 +322,15 @@ template <typename P> bool faest_compute_witness(secret_key<P>* sk)
 
         if (round_j < OC::OWF_ROUNDS)
         {
-            if constexpr (is_owf_with_norm_proof(P::owf_v))
+            if constexpr (is_owf_with_deg7_proof(P::owf_v))
+            {
+                if ((round_j & 1) == 0)
+                {
+                    // "odd" case of the spec -> full-sized state
+                    w_ptr += sizeof(owf_block);
+                }
+            }
+            else if constexpr (is_owf_with_norm_proof(P::owf_v))
             {
                 if ((round_j & 1) == 0)
                 {
@@ -263,39 +373,39 @@ bool faest_unpack_sk_and_get_pubkey(uint8_t* pk_packed, const uint8_t* sk_packed
     return true;
 }
 
-template <typename P> bool faest_seckey(const uint8_t* sk_packed)
+template <typename P> bool faest_seckey(const uint8_t* packed_sk)
 {
     secret_key<P> sk;
     if constexpr (!is_owf_with_zero_sboxes(P::owf_v))
-        return faest_unpack_secret_key<P>(&sk, sk_packed);
+        return faest_unpack_secret_key<P>(&sk, packed_sk);
     else if constexpr (is_owf_with_shrunk_keyspace(P::owf_v))
         // check that the first two bits of the secret key are not both 1
-        return (0x3 & sk_packed[FAEST_IV_BYTES<P>]) != 0x3;
+        return (0x3 & packed_sk[FAEST_IV_BYTES<P>]) != 0x3;
     else
         return true;
 }
 
-template <typename P> bool faest_pubkey(uint8_t* pk_packed, const uint8_t* sk_packed)
+template <typename P> bool faest_pubkey(uint8_t* packed_pk_, const uint8_t* packed_sk_)
 {
     secret_key<P> sk;
     if constexpr (!is_owf_with_zero_sboxes(P::owf_v))
     {
-        return faest_unpack_sk_and_get_pubkey(pk_packed, sk_packed, &sk);
+        return faest_unpack_sk_and_get_pubkey(packed_pk_, packed_sk_, &sk);
     }
     else
     {
-        if (!faest_seckey<P>(sk_packed))
+        if (!faest_seckey<P>(packed_sk_))
             return false;
 
         using OC = P::OWF_CONSTS;
         using owf_block = OC::block_t;
         constexpr auto S = P::secpar_v;
-        constexpr auto sk_offset = FAEST_IV_BYTES<P>;
-        constexpr auto owf_output_offset = FAEST_IV_BYTES<P>;
+        const auto packed_sk = packed_sk_view<P>(packed_sk_);
+        const auto packed_pk = mutable_packed_pk_view<P>(packed_pk_);
 
         std::array<owf_block, OC::OWF_BLOCKS> input;
         std::array<owf_block, OC::OWF_BLOCKS> output;
-        memcpy(input.data(), sk_packed, sk_offset);
+        memcpy(input.data(), packed_sk.owf_input().data(), packed_sk.owf_input().size());
 
         if constexpr (is_owf_with_ctr_input(P::owf_v) && OC::OWF_BLOCKS == 2)
         {
@@ -303,29 +413,35 @@ template <typename P> bool faest_pubkey(uint8_t* pk_packed, const uint8_t* sk_pa
             reinterpret_cast<uint8_t*>(&input[1])[0] ^= 0x01;
         }
 
-        if constexpr (is_owf_with_aes_em(P::owf_v))
+        if constexpr (is_owf_with_aes_ecb(P::owf_v))
+        {
+            block_secpar<S> aes_key;
+            memcpy(&aes_key, packed_sk.aes_key().data(), packed_sk.aes_key().size());
+            aes_round_keys<S> round_keys;
+            output = input;
+            aes_keygen_ecb<S, 1, OC::OWF_BLOCKS>(&aes_key, &round_keys, output.data());
+        }
+        else if constexpr (is_owf_with_aes_em(P::owf_v))
         {
             block_secpar<S> em_key;
             block_secpar<S> fixed_key;
-            memcpy(&em_key, sk_packed + sk_offset, P::secpar_bytes);
-            memcpy(&fixed_key, sk_packed, P::secpar_bytes);
+            memcpy(&em_key, packed_sk.em_key().data(), packed_sk.em_key().size());
+            memcpy(&fixed_key, packed_sk.fixed_key().data(), packed_sk.fixed_key().size());
             rijndael_round_keys<S> round_keys;
             const auto zero = block_secpar<S>::set_zero();
             uint32_t tweak = 0;
             uint32_t counter = 0;
             rijndael_keygen<S>(&round_keys, fixed_key);
-            rijndael_fixed_key_ctr<S, 1, 1>(&round_keys, &em_key, zero, &tweak, &counter, output.data());
+            rijndael_fixed_key_ctr<S, 1, 1>(&round_keys, &em_key, zero, &tweak, &counter,
+                                            output.data());
         }
         else
         {
-            block_secpar<S> aes_key;
-            memcpy(&aes_key, sk_packed + sk_offset, P::secpar_bytes);
-            aes_round_keys<S> round_keys;
-            output = input;
-            aes_keygen_ecb<S, 1, OC::OWF_BLOCKS>(&aes_key, &round_keys, output.data());
+            static_assert(false, "unsupported OWF");
         }
-        memcpy(pk_packed, sk_packed, owf_output_offset);
-        memcpy(pk_packed + owf_output_offset, output.data(), output.size() * sizeof(output[0]));
+        memcpy(packed_pk.owf_input().data(), packed_sk.owf_input().data(),
+               packed_sk.owf_input().size());
+        memcpy(packed_pk.owf_output().data(), output.data(), output.size() * sizeof(output[0]));
 
         return true;
     }

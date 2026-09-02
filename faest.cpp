@@ -3,183 +3,40 @@
 namespace faest
 {
 
-// clang-format off
+#define INST_FAEST(P)                                                                              \
+    template bool faest_unpack_secret_key(secret_key<P>*, const uint8_t*);                         \
+    template void faest_pack_public_key(uint8_t*, const public_key<P>*);                           \
+    template void faest_unpack_public_key(public_key<P>*, const uint8_t*);                         \
+    template bool faest_seckey<P>(const uint8_t*);                                                 \
+    template bool faest_pubkey<P>(uint8_t*, const uint8_t*);                                       \
+    template bool faest_sign<P>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*,  \
+                                size_t);                                                           \
+    template bool faest_verify<P>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
 
-template bool faest_unpack_secret_key(secret_key<v1::faest_128_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_128_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_192_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_192_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_256_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_256_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_128_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_128_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_192_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_192_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_256_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v1::faest_em_256_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_128_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_128_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_192_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_192_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_256_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_256_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_128_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_128_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_192_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_192_f>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_256_s>*, const uint8_t*);
-template bool faest_unpack_secret_key(secret_key<v2::faest_em_256_f>*, const uint8_t*);
+INST_FAEST(v2::faest_128_f);
+INST_FAEST(v2::faest_128_s);
+INST_FAEST(v2::faest_192_f);
+INST_FAEST(v2::faest_192_s);
+INST_FAEST(v2::faest_256_f);
+INST_FAEST(v2::faest_256_s);
+INST_FAEST(v2::faest_em_128_f);
+INST_FAEST(v2::faest_em_128_s);
+INST_FAEST(v2::faest_em_192_f);
+INST_FAEST(v2::faest_em_192_s);
+INST_FAEST(v2::faest_em_256_f);
+INST_FAEST(v2::faest_em_256_s);
 
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_128_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_128_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_192_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_192_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_256_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_256_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_128_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_128_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_192_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_192_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_256_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v1::faest_em_256_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_128_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_128_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_192_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_192_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_256_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_256_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_128_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_128_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_192_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_192_f>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_256_s>*);
-template void faest_pack_public_key(uint8_t*, const public_key<v2::faest_em_256_f>*);
-
-template void faest_unpack_public_key(public_key<v1::faest_128_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_128_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_192_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_192_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_256_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_256_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_128_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_128_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_192_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_192_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_256_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v1::faest_em_256_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_128_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_128_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_192_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_192_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_256_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_256_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_128_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_128_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_192_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_192_f>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_256_s>*, const uint8_t*);
-template void faest_unpack_public_key(public_key<v2::faest_em_256_f>*, const uint8_t*);
-
-template bool faest_seckey<v1::faest_128_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_128_f>(const uint8_t*);
-template bool faest_seckey<v1::faest_192_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_192_f>(const uint8_t*);
-template bool faest_seckey<v1::faest_256_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_256_f>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_128_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_128_f>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_192_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_192_f>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_256_s>(const uint8_t*);
-template bool faest_seckey<v1::faest_em_256_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_128_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_128_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_192_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_192_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_256_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_256_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_128_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_128_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_192_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_192_f>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_256_s>(const uint8_t*);
-template bool faest_seckey<v2::faest_em_256_f>(const uint8_t*);
-
-template bool faest_pubkey<v1::faest_128_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_128_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_192_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_192_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_256_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_256_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_128_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_128_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_192_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_192_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_256_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v1::faest_em_256_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_128_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_128_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_192_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_192_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_256_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_256_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_128_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_128_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_192_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_192_f>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_256_s>(uint8_t*, const uint8_t*);
-template bool faest_pubkey<v2::faest_em_256_f>(uint8_t*, const uint8_t*);
-
-template bool faest_sign<v1::faest_128_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_128_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_192_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_192_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_256_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_256_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_128_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_128_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_192_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_192_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_256_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v1::faest_em_256_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_128_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_128_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_192_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_192_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_256_s>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_256_f>( uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_128_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_128_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_192_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_192_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_256_s>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-template bool faest_sign<v2::faest_em_256_f>(uint8_t*, const uint8_t*, size_t, const uint8_t*, const uint8_t*, size_t);
-
-template bool faest_verify<v1::faest_128_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_128_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_192_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_192_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_256_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_256_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_128_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_128_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_192_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_192_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_256_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v1::faest_em_256_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_128_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_128_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_192_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_192_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_256_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_256_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_128_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_128_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_192_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_192_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_256_s>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-template bool faest_verify<v2::faest_em_256_f>(const uint8_t*, const uint8_t*, size_t, const uint8_t*);
-
-// clang-format on
+INST_FAEST(v3::faest_128_f);
+INST_FAEST(v3::faest_128_s);
+INST_FAEST(v3::faest_192_f);
+INST_FAEST(v3::faest_192_s);
+INST_FAEST(v3::faest_256_f);
+INST_FAEST(v3::faest_256_s);
+INST_FAEST(v3::faest_em_128_f);
+INST_FAEST(v3::faest_em_128_s);
+INST_FAEST(v3::faest_em_192_f);
+INST_FAEST(v3::faest_em_192_s);
+INST_FAEST(v3::faest_em_256_f);
+INST_FAEST(v3::faest_em_256_s);
 
 } // namespace faest

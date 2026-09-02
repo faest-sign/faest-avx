@@ -13,6 +13,12 @@ template <> struct block<128>
 {
     __m128i data;
 
+    inline static block128 load(const void* p)
+    {
+        return {_mm_loadu_si128(static_cast<const __m128i*>(p))};
+    }
+    inline void store(void* p) const { _mm_storeu_si128(static_cast<__m128i*>(p), data); }
+
     inline block128 operator^(const block128& y) const
     {
         return {_mm_xor_si128(this->data, y.data)};
@@ -92,6 +98,12 @@ inline bool block<192>::any_zeros() const
 template <> struct block<256>
 {
     __m256i data;
+
+    inline static block256 load(const void* p)
+    {
+        return {_mm256_loadu_si256(static_cast<const __m256i*>(p))};
+    }
+    inline void store(void* p) const { _mm256_storeu_si256(static_cast<__m256i*>(p), data); }
 
     inline block256 operator^(const block256& y) const
     {

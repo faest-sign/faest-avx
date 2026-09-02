@@ -7,7 +7,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-TEMPLATE_TEST_CASE("owf proof", "[owf proof]", ALL_FAEST_V1_INSTANCES)
+TEMPLATE_TEST_CASE("owf proof", "[owf proof]", ALL_FAEST_INSTANCES)
 {
     using P = TestType;
     constexpr auto S = P::secpar_v;
@@ -21,9 +21,9 @@ TEMPLATE_TEST_CASE("owf proof", "[owf proof]", ALL_FAEST_V1_INSTANCES)
     faest_unpack_public_key(&pk, packed_pk.data());
 
     const auto delta = rand<block_secpar<S>>();
-    quicksilver_test_state<S> qs_test(P::OWF_CONSTS::OWF_NUM_CONSTRAINTS,
-                                      reinterpret_cast<uint8_t*>(sk.witness),
-                                      P::OWF_CONSTS::WITNESS_BITS, delta);
+    quicksilver_test_state<S, P::OWF_CONSTS::QS_DEGREE> qs_test(
+        P::OWF_CONSTS::OWF_NUM_CONSTRAINTS, reinterpret_cast<uint8_t*>(sk.witness.data()),
+        P::OWF_CONSTS::WITNESS_BITS, delta);
     auto& qs_state_prover = qs_test.prover_state;
     auto& qs_state_verifier = qs_test.verifier_state;
 

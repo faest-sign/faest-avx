@@ -2,7 +2,6 @@
 #define PRGS_HPP
 
 #include "aes.hpp"
-#include "hash.hpp"
 #include "parameters.hpp"
 
 namespace faest
@@ -60,10 +59,10 @@ struct prg_base
 
     // Similar, but for a single key.
     template <size_t blocks>
-    static void init(const key_t* keys, expanded_key_t& expanded_key,
-                     const iv_t& iv, size_t counter, block_t* output)
+    static void init(const key_t* keys, expanded_key_t& expanded_key, const iv_t& iv, tweak_t tweak,
+                     count_t counter, block_t* output)
     {
-        return init<1, blocks>(keys, &expanded_key, &iv, &counter, output);
+        return init<1, blocks>(keys, &expanded_key, iv, tweak, counter, output);
     }
 
     // Given an IV and num_keys expanded keys, tweaks, and initial counters, generate blocks_per_key
@@ -99,10 +98,10 @@ struct prg_base
 
     // Similar, but for a single key.
     template <size_t blocks>
-    static void gen(const expanded_key_t& expanded_key, const iv_t& iv, size_t counter,
-                    block_t* output)
+    static void gen(const expanded_key_t& expanded_key, const iv_t& iv, tweak_t tweak,
+                    count_t counter, block_t* output)
     {
-        return gen<1, blocks>(&expanded_key, &iv, &counter, output);
+        return gen<1, blocks>(&expanded_key, iv, tweak, counter, output);
     }
 };
 

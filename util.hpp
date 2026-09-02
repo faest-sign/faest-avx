@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <cstring>
 
 namespace faest
 {
@@ -108,6 +109,42 @@ template <size_t length, typename T>
 std::array<T, length> array_dup(const T& x)
 {
     return array_dup_impl<length, select_highest_bit_set(length), T>(x);
+}
+
+// Read a chunk of N bits from src[pos,pos+N) (using bit indices)
+// and output it in the N least significant bits of an integer.
+// - We assume src contains at least ceil((pos + N) / bytes.
+template <size_t N>
+uint64_t extract_bits(const uint8_t* src, size_t pos)
+    requires(N <= 56)
+{
+    constexpr uint64_t mask = (uint64_t{1} << N) - 1;
+    const size_t byte_start = pos / 8;
+    const size_t bit_offset = pos % 8;
+    const size_t chunk_size = (bit_offset + N + 7) / 8;
+    uint64_t chunk = 0;
+    assert(chunk_size <= sizeof(chunk));
+    memcpy(&chunk, src + byte_start, chunk_size);
+    return (chunk >> bit_offset) & mask;
+}
+
+// Write the N least significant bits from val to dst[pos,pos+N) (using bit indices)
+// without modifying any other bits of dst.
+// - We assume dst contains at least ceil((pos + N) / bytes.
+template <size_t N>
+void insert_bits(uint8_t* dst, size_t pos, uint64_t val)
+    requires(N <= 56)
+{
+    // assert(val < (uint64_t{1} << N));
+    constexpr uint64_t mask = ~((uint64_t{1} << N) - 1);
+    const size_t byte_start = pos / 8;
+    const size_t bit_offset = pos % 8;
+    const size_t chunk_size = (bit_offset + N + 7) / 8;
+    uint64_t chunk = 0;
+    memcpy(&chunk, dst + byte_start, chunk_size);
+    chunk &= (mask << bit_offset) | ((uint64_t{1} << bit_offset) - 1);
+    chunk |= val << bit_offset;
+    memcpy(dst + byte_start, &chunk, chunk_size);
 }
 
 } // namespace faest

@@ -304,8 +304,8 @@ class quicksilver_helpers
 {
     template <secpar S_, bool verifier, size_t max_deg> requires (max_deg >= 1) friend struct quicksilver_state;
 
-    static void finalize_hashes(const hasher_gfsecpar_state<S>* state_secpar,
-                                const hasher_gfsecpar_64_state<S>* state_64,
+    static void finalize_hashes(const uhasher_gfsecpar<S>* state_secpar,
+                                const uhasher_gfsecpar_64<S>* state_64,
                                 const poly_secpar<S>* hash_combination,
                                 poly_2secpar<S> mask, uint8_t* output)
     {
@@ -358,8 +358,8 @@ class quicksilver_helpers
 
     static void init_hashers(
         const uint8_t* challenge, size_t num_constraints, poly_secpar<S>* hash_combination,
-        hasher_gfsecpar_key<S>* key_secpar, hasher_gfsecpar_64_key* key_64,
-        hasher_gfsecpar_state<S>* state_secpar, hasher_gfsecpar_64_state<S>* state_64,
+        uhasher_gfsecpar<S>::prep_key_t* key_secpar, uhasher_gfsecpar_64<S>::prep_key_t* key_64,
+        uhasher_gfsecpar<S>* state_secpar, uhasher_gfsecpar_64<S>* state_64,
         size_t num_hashes)
     {
         for (size_t i = 0; i < 2; ++i, challenge += secpar_to_bytes(S))
@@ -367,8 +367,8 @@ class quicksilver_helpers
         poly_secpar<S> hash_key_secpar = poly_secpar<S>::load_dup(challenge);
         poly64 hash_key_64 = poly64::load_dup(challenge + secpar_to_bytes(S));
 
-        key_secpar->init(hash_key_secpar);
-        key_64->init(hash_key_64);
+        *key_secpar = uhasher_gfsecpar<S>::preprocess_key(hash_key_secpar);
+        *key_64 = uhasher_gfsecpar_64<S>::preprocess_key(hash_key_64);
 
         for (size_t i = 0; i < num_hashes; ++i)
         {
@@ -391,10 +391,13 @@ public:
     static constexpr size_t secpar_bits = secpar_to_bits(S);
     static constexpr size_t max_degree = max_deg;
 
-    hasher_gfsecpar_key<S> key_secpar;
-    hasher_gfsecpar_64_key key_64;
-    hasher_gfsecpar_state<S> state_secpar[verifier ? 1 : max_degree];
-    hasher_gfsecpar_64_state<S> state_64[verifier ? 1 : max_degree];
+    using verifier_mask_t = poly_2secpar<S>;
+    using prover_mask_t = poly2d<max_degree, 2 * secpar_to_bits(S)>;
+
+    uhasher_gfsecpar<S>::prep_key_t key_secpar;
+    uhasher_gfsecpar_64<S>::prep_key_t key_64;
+    std::array<uhasher_gfsecpar<S>, verifier ? 1 : max_degree> state_secpar;
+    std::array<uhasher_gfsecpar_64<S>, verifier ? 1 : max_degree> state_64;
 
     poly_secpar<S> hash_combination[2];
 
@@ -406,7 +409,7 @@ public:
                       const uint8_t* challenge) requires (!verifier)
     {
         helpers::init_hashers(challenge, num_constraints, hash_combination,
-                              &key_secpar, &key_64, state_secpar, state_64, max_degree);
+                              &key_secpar, &key_64, state_secpar.data(), state_64.data(), max_degree);
 
         this->witness = witness;
         this->macs = macs;
@@ -418,7 +421,7 @@ public:
                       const uint8_t* challenge) requires (verifier)
     {
         helpers::init_hashers(challenge, num_constraints, hash_combination,
-                              &key_secpar, &key_64, state_secpar, state_64, 1);
+                              &key_secpar, &key_64, state_secpar.data(), state_64.data(), 1);
 
         auto delta_powers = &this->delta_powers[0];
         delta_powers[0] = poly_secpar<S>::load_dup(&delta);
@@ -433,12 +436,7 @@ public:
         quicksilver_gf2<quicksilver_state> out(this);
         if constexpr (!verifier)
         {
-            uint16_t tmp;
-
-            // This won't overflow the bounds of witness because there are extra masking bits at the
-            // end, which won't get accessed through this function.
-            memcpy(&tmp, &this->witness[index / 8], sizeof(tmp));
-            out.value() = poly1::load(tmp, index % 8);
+            out.value() = poly1::load(this->witness[index / 8], index % 8);
         }
         out.mac = poly_secpar<S>::load(&macs[index]);
         return out;
@@ -525,18 +523,25 @@ public:
         quicksilver_gfsecpar<quicksilver_state, max_degree> x_max = x;
         if constexpr (verifier)
         {
-            state_secpar[0].update(&key_secpar, x_max.mac);
-            state_64[0].update(&key_64, x_max.mac);
+            state_secpar[0].update(key_secpar, x_max.mac);
+            state_64[0].update(key_64, x_max.mac);
         }
         else
         {
             FAEST_ASSERT(x_max.value() == poly_secpar<S>::set_zero());
             for (size_t i = 0; i < max_degree; ++i)
             {
-                state_secpar[i].update(&key_secpar, x_max.mac.coeffs[i]);
-                state_64[i].update(&key_64, x_max.mac.coeffs[i]);
+                state_secpar[i].update(key_secpar, x_max.mac.coeffs[i]);
+                state_64[i].update(key_64, x_max.mac.coeffs[i]);
             }
         }
+    }
+
+    // Add a constraint of the form x == 0 || x == 1.
+    template <size_t deg>
+    inline void add_bit_constraint(quicksilver_gfsecpar<quicksilver_state, deg> x)
+    {
+        add_constraint(x * (x + 1));
     }
 
     // Add a constraint of the form x*y == 1.
@@ -560,8 +565,19 @@ public:
         add_constraint(x * y_square + y);
     }
 
+    void prove_with_mask(uint8_t* __restrict__ proof, uint8_t* __restrict__ check,
+                         const prover_mask_t& masks) const
+        requires(!verifier)
+    {
+        for (size_t i = 0; i < max_degree; ++i)
+            helpers::finalize_hashes(&state_secpar[i], &state_64[i], hash_combination,
+                                     masks.coeffs[i],
+                                     i == 0 ? check : proof + secpar_to_bytes(S) * (i - 1));
+    }
+
+    // Use the suffix of the witness to build the mask VOLEs
     void prove(size_t witness_bits, uint8_t* __restrict__ proof, uint8_t* __restrict__ check) const
-        requires (!verifier)
+        requires(!verifier)
     {
         FAEST_ASSERT(witness_bits % 8 == 0);
 
@@ -574,16 +590,36 @@ public:
             masks.coeffs[i] += mask_mac;
             masks.coeffs[i + 1] += mask_value;
         }
-
-        for (size_t i = 0; i < max_degree; ++i)
-            helpers::finalize_hashes(&state_secpar[i], &state_64[i],
-                                     hash_combination, masks.coeffs[i],
-                                     i == 0 ? check : proof + secpar_to_bytes(S) * (i - 1));
+        this->prove_with_mask(proof, check, masks);
     }
 
+    // Use the supplied (u_mask, v_mask)
+    void prove(const block_secpar<S>* u_mask, const block_secpar<S>* v_mask,
+               uint8_t* __restrict__ proof, uint8_t* __restrict__ check) const
+        requires(!verifier)
+    {
+        prover_mask_t masks;
+        {
+            masks.coeffs[0] = poly_2secpar<S>::set_zero();
+            for (size_t i = 0; i < max_degree - 1; ++i)
+            {
+                masks.coeffs[i] += poly_2secpar<S>::from(poly_secpar<S>::from_block(v_mask[i]));
+                masks.coeffs[i + 1] = poly_2secpar<S>::from(poly_secpar<S>::from_block(u_mask[i]));
+            }
+        }
+        this->prove_with_mask(proof, check, masks);
+    }
+
+    void verify_with_mask(uint8_t* __restrict__ check, const verifier_mask_t mask) const
+        requires(verifier)
+    {
+        helpers::finalize_hashes(&state_secpar[0], &state_64[0], hash_combination, mask, check);
+    }
+
+    // Use the suffix of the witness to build the mask VOLEs
     void verify(size_t witness_bits, const uint8_t* __restrict__ proof,
                 uint8_t* __restrict__ check) const
-        requires (verifier)
+        requires(verifier)
     {
         auto mask = poly_2secpar<S>::set_zero();
         if (max_degree >= 2)
@@ -592,14 +628,35 @@ public:
             for (size_t i = 1; i < max_degree - 1; ++i, proof += secpar_to_bytes(S))
             {
                 witness_bits += secpar_to_bits(S);
-                auto coeff = poly_secpar<S>::load_dup(proof)
-                    + helpers::combine_mac_masks(macs, witness_bits).template reduce_to<secpar_to_bits(S)>();
+                auto coeff =
+                    poly_secpar<S>::load_dup(proof) + helpers::combine_mac_masks(macs, witness_bits)
+                                                          .template reduce_to<secpar_to_bits(S)>();
                 mask += coeff * this->delta_powers[i - 1];
             }
             mask += poly_secpar<S>::load_dup(proof) * this->delta_powers[max_degree - 2];
         }
+        this->verify_with_mask(check, mask);
+    }
 
-        helpers::finalize_hashes(&state_secpar[0], &state_64[0], hash_combination, mask, check);
+    // Use the supplied q_mask
+    void verify(const block_secpar<S>* q_mask, const uint8_t* __restrict__ proof,
+                uint8_t* __restrict__ check) const
+        requires(verifier)
+    {
+        auto mask = poly_2secpar<S>::set_zero();
+
+        if (max_degree >= 2)
+        {
+            mask = poly_2secpar<S>::from(poly_secpar<S>::from_block(q_mask[0]));
+            for (size_t i = 1; i < max_degree - 1; ++i, proof += secpar_to_bytes(S))
+            {
+                const auto coeff =
+                    poly_secpar<S>::load(proof) + poly_secpar<S>::from_block(q_mask[i]);
+                mask += coeff * this->delta_powers[i - 1];
+            }
+            mask += poly_secpar<S>::load(proof) * this->delta_powers[max_degree - 2];
+        }
+        this->verify_with_mask(check, mask);
     }
 };
 
@@ -704,6 +761,13 @@ operator+(const quicksilver_gfsecpar<QS, deg>& a, poly1 b)
 }
 
 template <typename QS, size_t deg>
+inline quicksilver_gfsecpar<QS, deg>
+operator+(const quicksilver_gfsecpar<QS, deg>& a, poly_secpar<QS::secpar_v> b)
+{
+    return a + quicksilver_gfsecpar<QS, deg>(b, a);
+}
+
+template <typename QS, size_t deg>
 inline quicksilver_gf2<QS, deg>
 operator+(poly1 a, const quicksilver_gf2<QS, deg>& b)
 {
@@ -713,6 +777,13 @@ operator+(poly1 a, const quicksilver_gf2<QS, deg>& b)
 template <typename QS, size_t deg>
 inline quicksilver_gfsecpar<QS, deg>
 operator+(poly1 a, const quicksilver_gfsecpar<QS, deg>& b)
+{
+    return b + a;
+}
+
+template <typename QS, size_t deg>
+inline quicksilver_gfsecpar<QS, deg>
+operator+(poly_secpar<QS::secpare_v> a, const quicksilver_gfsecpar<QS, deg>& b)
 {
     return b + a;
 }

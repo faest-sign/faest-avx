@@ -8,14 +8,14 @@ It is based on the previous C implementation, which you can find
 
 The major version number of the FAEST implementation matches the major version number of the FAEST
 specification it implements.
-The implementation is currently at version 2.0.2.
+The implementation is currently at version 3.0.0.
 
 ## Compilation
 
-Building requires (tested versions in parentheses):
-- GCC (>= 14.2.0) or Clang (>= 19.1.7)
-- [Meson](https://mesonbuild.com/) (>= 1.7.0)
-- [Ninja](https://ninja-build.org/) (>= 1.12.1)
+Building requires (*tested* versions in parentheses):
+- GCC (>= 16.2.1) or Clang (>= 22.1.8)
+- [Meson](https://mesonbuild.com/) (>= 1.12.0)
+- [Ninja](https://ninja-build.org/) (>= 1.13.2)
 
 The dependencies [XKCP](https://github.com/XKCP/XKCP) for SHAKE and
 [Catch2](https://github.com/catchorg/Catch2) for tests/benchmarks are automatically downloaded
@@ -61,7 +61,7 @@ A parameter set is defined by instantiating the template `parameter_set` in
 [`parameters.hpp`](parameters.hpp).
 This defines compile-time constants for all the switches and sizes used throughout the
 implementation.
-By default, we include parameter sets that correspond to the FAEST v1[^1] and the FAEST v2 variants.
+By default, we include parameter sets that correspond to the FAEST v1[^1], v2, and v3 variants.
 
 [^1]: Note that the v1 variant are not bit-compatible to the FAEST v1 specification, since we changed
 some details of the signature scheme.
@@ -81,7 +81,7 @@ A FAEST instance is defined by the following parameters:
 - The Batch All-But-One Vector Commitment (BAVC) (forest of GGM trees, or the [One-Tree
   BAVC](https://eprint.iacr.org/2024/490) with a opening size threshold T_open).
 
-For more details, we refer to the [FAEST v2 specification](https://faest.info/resources.html).
+For more details, we refer to the latest [FAEST specification](https://faest.info/resources.html).
 
 
 ### Platform Settings

@@ -1,111 +1,71 @@
-#ifndef TEST_FAEST_TVS_HPP
-#define TEST_FAEST_TVS_HPP
+#ifndef TEST_FAEST_V2_TVS_HPP
+#define TEST_FAEST_V2_TVS_HPP
 
 #include <array>
 #include <cstdint>
 #include <string>
 
-namespace faest_tvs_v1
+#include "faest.hpp"
+#include "faest_keys.hpp"
+#include "parameters.hpp"
+
+using namespace faest;
+
+template <typename P> struct faest_tvs
 {
+    const static std::array<uint8_t, FAEST_SECRET_KEY_BYTES<P>> sk;
+    const static std::array<uint8_t, FAEST_PUBLIC_KEY_BYTES<P>> pk;
+    const static std::array<uint8_t, (P::OWF_CONSTS::WITNESS_BITS + 7) / 8> witness;
+    const static std::array<uint8_t, FAEST_SIGNATURE_BYTES<P>> signature;
 
-extern const std::string message;
+    constexpr static std::array<uint8_t, 16> random_seed = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+    };
 
-namespace faest_128s_tvs
-{
-extern const std::array<uint8_t, 16 + 16> packed_sk;
-extern const std::array<uint8_t, 16 + 16> packed_pk;
-extern const std::array<uint8_t, 16> randomness;
-extern const std::array<uint8_t, 5006> signature;
-} // namespace faest_128s_tvs
+    // "This document describes and specifies the FAEST digital signature algorithm.";
+    constexpr static std::array<uint8_t, 76> message = {
+        0x54, 0x68, 0x69, 0x73, 0x20, 0x64, 0x6f, 0x63, 0x75, 0x6d, 0x65, 0x6e, 0x74,
+        0x20, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x73, 0x20, 0x61, 0x6e,
+        0x64, 0x20, 0x73, 0x70, 0x65, 0x63, 0x69, 0x66, 0x69, 0x65, 0x73, 0x20, 0x74,
+        0x68, 0x65, 0x20, 0x46, 0x41, 0x45, 0x53, 0x54, 0x20, 0x64, 0x69, 0x67, 0x69,
+        0x74, 0x61, 0x6c, 0x20, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65,
+        0x20, 0x61, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x2e,
+    };
+};
 
-namespace faest_128f_tvs
-{
-extern const std::array<uint8_t, 16 + 16> packed_sk;
-extern const std::array<uint8_t, 16 + 16> packed_pk;
-extern const std::array<uint8_t, 16> randomness;
-extern const std::array<uint8_t, 6336> signature;
-} // namespace faest_128f_tvs
+#define DECL_FAEST_TVS(P)                                                                          \
+    template <> decltype(faest_tvs<P>::sk) faest_tvs<P>::sk;                                       \
+    template <> decltype(faest_tvs<P>::pk) faest_tvs<P>::pk;                                       \
+    template <> decltype(faest_tvs<P>::witness) faest_tvs<P>::witness;                             \
+    template <> decltype(faest_tvs<P>::signature) faest_tvs<P>::signature;
 
-namespace faest_192s_tvs
-{
-extern const std::array<uint8_t, 32 + 24> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 24> randomness;
-extern const std::array<uint8_t, 12744> signature;
-} // namespace faest_192s_tvs
+DECL_FAEST_TVS(v2::faest_128_f)
+DECL_FAEST_TVS(v2::faest_128_s)
+DECL_FAEST_TVS(v2::faest_192_f)
+DECL_FAEST_TVS(v2::faest_192_s)
+DECL_FAEST_TVS(v2::faest_256_f)
+DECL_FAEST_TVS(v2::faest_256_s)
+DECL_FAEST_TVS(v2::faest_em_128_f)
+DECL_FAEST_TVS(v2::faest_em_128_s)
+DECL_FAEST_TVS(v2::faest_em_192_f)
+DECL_FAEST_TVS(v2::faest_em_192_s)
+DECL_FAEST_TVS(v2::faest_em_256_f)
+DECL_FAEST_TVS(v2::faest_em_256_s)
 
-namespace faest_192f_tvs
-{
-extern const std::array<uint8_t, 32 + 24> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 24> randomness;
-extern const std::array<uint8_t, 16792> signature;
-} // namespace faest_192f_tvs
+DECL_FAEST_TVS(v3::faest_128_f)
+DECL_FAEST_TVS(v3::faest_128_s)
+DECL_FAEST_TVS(v3::faest_192_f)
+DECL_FAEST_TVS(v3::faest_192_s)
+DECL_FAEST_TVS(v3::faest_256_f)
+DECL_FAEST_TVS(v3::faest_256_s)
+DECL_FAEST_TVS(v3::faest_em_128_f)
+DECL_FAEST_TVS(v3::faest_em_128_s)
+DECL_FAEST_TVS(v3::faest_em_192_f)
+DECL_FAEST_TVS(v3::faest_em_192_s)
+DECL_FAEST_TVS(v3::faest_em_256_f)
+DECL_FAEST_TVS(v3::faest_em_256_s)
 
-namespace faest_256s_tvs
-{
-extern const std::array<uint8_t, 32 + 32> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 32> randomness;
-extern const std::array<uint8_t, 22100> signature;
-} // namespace faest_256s_tvs
+#undef DECL_FAEST_TVS
 
-namespace faest_256f_tvs
-{
-extern const std::array<uint8_t, 32 + 32> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 32> randomness;
-extern const std::array<uint8_t, 28400> signature;
-} // namespace faest_256f_tvs
-
-namespace faest_em_128s_tvs
-{
-extern const std::array<uint8_t, 16 + 16> packed_sk;
-extern const std::array<uint8_t, 16 + 16> packed_pk;
-extern const std::array<uint8_t, 16> randomness;
-extern const std::array<uint8_t, 4566> signature;
-} // namespace faest_em_128s_tvs
-
-namespace faest_em_128f_tvs
-{
-extern const std::array<uint8_t, 16 + 16> packed_sk;
-extern const std::array<uint8_t, 16 + 16> packed_pk;
-extern const std::array<uint8_t, 16> randomness;
-extern const std::array<uint8_t, 5696> signature;
-} // namespace faest_em_128f_tvs
-
-namespace faest_em_192s_tvs
-{
-extern const std::array<uint8_t, 24 + 24> packed_sk;
-extern const std::array<uint8_t, 24 + 24> packed_pk;
-extern const std::array<uint8_t, 24> randomness;
-extern const std::array<uint8_t, 10824> signature;
-} // namespace faest_em_192s_tvs
-
-namespace faest_em_192f_tvs
-{
-extern const std::array<uint8_t, 24 + 24> packed_sk;
-extern const std::array<uint8_t, 24 + 24> packed_pk;
-extern const std::array<uint8_t, 24> randomness;
-extern const std::array<uint8_t, 13912> signature;
-} // namespace faest_em_192f_tvs
-
-namespace faest_em_256s_tvs
-{
-extern const std::array<uint8_t, 32 + 32> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 32> randomness;
-extern const std::array<uint8_t, 20956> signature;
-} // namespace faest_em_256s_tvs
-
-namespace faest_em_256f_tvs
-{
-extern const std::array<uint8_t, 32 + 32> packed_sk;
-extern const std::array<uint8_t, 32 + 32> packed_pk;
-extern const std::array<uint8_t, 32> randomness;
-extern const std::array<uint8_t, 26736> signature;
-} // namespace faest_em_256f_tvs
-
-} // namespace faest_tvs
-
-#endif // TEST_FAEST_TVS_HPP
+#endif

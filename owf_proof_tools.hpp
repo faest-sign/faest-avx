@@ -4,8 +4,21 @@
 #include "quicksilver.hpp"
 #include <algorithm>
 
-namespace faest
+namespace faest::zk
 {
+
+template <secpar S> constexpr static std::size_t N_WD = secpar_to_bits(S) / 32;
+template <secpar S, owf O> constexpr static std::size_t S_ENC = OWF_CONSTANTS<S, O>::OWF_ENC_SBOXES;
+
+template <secpar S, owf O> using owf_block = OWF_CONSTANTS<S, O>::block_t;
+
+template <typename QS, typename OC>
+using owf_round_key_bits =
+    std::array<quicksilver_gf2<QS>, 8 * OC::OWF_BLOCK_SIZE*(OC::OWF_ROUNDS + 1)>;
+
+template <typename QS, typename OC>
+using owf_round_key_bytes =
+    std::array<quicksilver_gfsecpar<QS>, OC::OWF_BLOCK_SIZE*(OC::OWF_ROUNDS + 1)>;
 
 template <typename QS, size_t deg>
 inline void square_8_bits(quicksilver_gf2<QS, deg>* y, const quicksilver_gf2<QS, deg>* x)
@@ -36,7 +49,7 @@ inline void gf256_gf2_conjugates(const QS* qs_state,
     static_assert(num_conjugates > 1);
     static_assert(num_conjugates <= 8);
     auto t = qs_state->template const_gf2_2d_array<8, 2, deg>();
-    y[0] = quicksilver_gfsecpar<QS,deg>::combine_8_bits(x.data());
+    y[0] = quicksilver_gfsecpar<QS, deg>::combine_8_bits(x.data());
     square_8_bits(t[0].data(), x.data());
 
     for (size_t i = 0; i < num_conjugates - 1; ++i)
@@ -44,7 +57,8 @@ inline void gf256_gf2_conjugates(const QS* qs_state,
         y[i + 1] = quicksilver_gfsecpar<QS, deg>::combine_8_bits(t[i & 1].data());
         square_8_bits(t[(i & 1) ^ 1].data(), t[i & 1].data());
     }
-    y[num_conjugates - 1] = quicksilver_gfsecpar<QS,deg>::combine_8_bits(t[num_conjugates & 1].data());
+    y[num_conjugates - 1] =
+        quicksilver_gfsecpar<QS, deg>::combine_8_bits(t[num_conjugates & 1].data());
 }
 
 template <typename QS, size_t deg>
@@ -125,7 +139,7 @@ sbox_affine(const std::array<quicksilver_gfsecpar<QS, deg>, 8>& in_with_conjugat
            poly_secpar<S>::from_8_byte(C[5]) * in_with_conjugates[5 + t] +
            poly_secpar<S>::from_8_byte(C[6]) * in_with_conjugates[6 + t] +
            poly_secpar<S>::from_8_byte(C[7]) * in_with_conjugates[(7 + t) % 8] +
-           quicksilver_gfsecpar<QS,deg>(poly_secpar<S>::from_8_byte(C[8]), in_with_conjugates[0]);
+           quicksilver_gfsecpar<QS, deg>(poly_secpar<S>::from_8_byte(C[8]), in_with_conjugates[0]);
 }
 
 template <secpar S, owf O, bool square, typename QS, size_t deg, size_t deg2>
@@ -230,6 +244,6 @@ inline void bitwise_inverse_shift_rows_and_sbox_affine(
     }
 }
 
-} // namespace faest
+} // namespace faest::zk
 
 #endif

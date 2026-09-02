@@ -1,11 +1,13 @@
 CC?=gcc
 CXX?=g++
-CFLAGS+= -g -O3 -std=c23 -march=native -mtune=native -flto=auto
-CXXFLAGS+= -g -O3 -std=c++23 -march=native -mtune=native -flto=auto
+CFLAGS?= -march=native
+CXXFLAGS?= -march=native
+CFLAGS+= -g -O3 -std=c23 -mtune=native -flto=auto
+CXXFLAGS+= -g -O3 -std=c++23 -mtune=native -flto=auto
 CPPFLAGS+= -I. -Isha3 -DHAVE_OPENSSL
 LDFLAGS+= -flto=auto
 
-SOURCES=$(filter-out randomness_os.c randomness_randombytes.c,$(wildcard *.c)) api.cpp polynomials_constants.cpp vector_com.cpp $(wildcard avx2/*.c) $(wildcard avx2/*.cpp) $(wildcard sha3/*.c) $(wildcard sha3/*.s)
+SOURCES=$(filter-out randomness_os.c randomness_randombytes.c,$(wildcard *.c)) $(wildcard *.cpp) $(wildcard sha3/*.c) $(wildcard sha3/*.s)
 EXECUTABLE_APITEST=tests/api_test
 EXECUTABLE_NISTKAT=NIST-KATs/PQCgenKAT_sign
 LIBFAEST=libfaest.a

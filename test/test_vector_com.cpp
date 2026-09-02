@@ -250,7 +250,7 @@ struct tvs<test_params_128> {
     // test vectors from faest-ref
     constexpr static unsigned int test_vectors = 4;
     constexpr static unsigned int depth = 4;
-    static_assert(depth == test_params_128::CONSTS::VEC_COM::MAX_K);
+    static_assert(depth == test_params_128::CONSTS::VEC_COM::MAX_USED_K);
 
     constexpr static std::array<uint8_t, test_params_128::secpar_bytes> root_key{
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -336,7 +336,7 @@ struct tvs<test_params_192> {
     // test vectors from faest-ref
     constexpr static unsigned int test_vectors = 4;
     constexpr static unsigned int depth = 4;
-    static_assert(depth == test_params_192::CONSTS::VEC_COM::MAX_K);
+    static_assert(depth == test_params_192::CONSTS::VEC_COM::MAX_USED_K);
 
     constexpr static std::array<uint8_t, test_params_192::secpar_bytes> root_key{
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
@@ -450,7 +450,7 @@ struct tvs<test_params_256> {
     // test vectors from faest-ref
     constexpr static unsigned int test_vectors = 4;
     constexpr static unsigned int depth = 5;
-    static_assert(depth == test_params_256::CONSTS::VEC_COM::MAX_K);
+    static_assert(depth == test_params_256::CONSTS::VEC_COM::MAX_USED_K);
 
     constexpr static std::array<uint8_t, test_params_256::secpar_bytes> root_key{
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
@@ -713,7 +713,7 @@ TEMPLATE_TEST_CASE("ggm_forest compare against tv", "[vector com]", test_params_
                               hashed_leaves_sender.data());
     // check the hashed leaves
     {
-        std::array<uint8_t, 2 * P::secpar_bytes * (1 << VC::MAX_K)> hashed_leaves_vec;
+        std::array<uint8_t, 2 * P::secpar_bytes * (1 << VC::MAX_USED_K)> hashed_leaves_vec;
         memcpy(hashed_leaves_vec.data(), hashed_leaves_sender.data(), hashed_leaves_vec.size());
         CHECK(hashed_leaves_vec == tv_com);
     }
@@ -823,7 +823,7 @@ TEMPLATE_TEST_CASE("bacv compare against tv", "[vector com]", ALL_FAEST_V2_INSTA
         offset += (size_t)1 << k;
     }
 
-    hash_hashed_leaves<P>(hashed_leaves_sender.data(), commitment_h.data());
+    detail::hash_hashed_leaves<P>(hashed_leaves_sender.data(), commitment_h.data());
     REQUIRE(commitment_h == TVS::h);
 
     const auto hashed_sd =

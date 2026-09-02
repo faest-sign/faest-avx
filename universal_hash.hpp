@@ -9,6 +9,146 @@
 namespace faest
 {
 
+template <secpar S, size_t PREP_KEY_POWS = 8> struct uhasher_gfsecpar
+{
+    using key_t = poly_secpar<S>;
+    using hash_t = poly_secpar<S>;
+
+    struct prep_key_t
+    {
+        std::array<poly_secpar<S>, PREP_KEY_POWS> key_pows;
+    };
+
+    poly_2secpar<S> state;
+    int pow;
+    mutable bool is_initialized = false;
+
+    static inline prep_key_t preprocess_key(key_t key)
+    {
+        prep_key_t prep_key;
+
+        // Preprocess powers of the key
+        prep_key.key_pows[0] = key;
+        poly_secpar<S> key_pow = key;
+        for (size_t i = 1; i < PREP_KEY_POWS; ++i)
+        {
+            key_pow = (key_pow * key).template reduce_to<secpar_to_bits(S)>();
+            prep_key.key_pows[i] = key_pow;
+        }
+        return prep_key;
+    }
+
+    inline void init(size_t num_coefficients)
+    {
+        // Initialize the state
+        this->state = poly_2secpar<S>::set_zero();
+        this->pow = (num_coefficients + PREP_KEY_POWS - 1) % PREP_KEY_POWS;
+        this->is_initialized = true;
+    }
+
+    // - Needs to get called `num_coefficients` (parameter to `init`) times before
+    // calling `finalize`.
+    inline void update(const prep_key_t& pkey, poly_secpar<S> input)
+    {
+        FAEST_ASSERT(this->is_initialized);
+        if (this->pow == -1)
+        {
+            this->state = pkey.key_pows[PREP_KEY_POWS - 1] *
+                          this->state.template reduce_to<secpar_to_bits(S)>();
+            this->pow = PREP_KEY_POWS - 1;
+        }
+
+        poly_2secpar<S> summand;
+        if (this->pow > 0)
+            summand = pkey.key_pows[this->pow - 1] * input;
+        else
+            summand = poly_2secpar<S>::from(input);
+        this->state = this->state + summand;
+        --this->pow;
+    }
+    // - Needs to get called `num_coefficients` (parameter to `init`) times before
+    // calling `finalize`.
+    inline void update(const prep_key_t& pkey, poly1 input)
+    {
+        FAEST_ASSERT(this->is_initialized);
+        if (this->pow == -1)
+        {
+            this->state = pkey.key_pows[PREP_KEY_POWS - 1] *
+                          this->state.template reduce_to<secpar_to_bits(S)>();
+            this->pow = PREP_KEY_POWS - 1;
+        }
+
+        poly_2secpar<S> summand;
+        if (this->pow > 0)
+            summand = poly_2secpar<S>::from(input * pkey.key_pows[this->pow - 1]);
+        else
+            summand = poly_2secpar<S>::from(input);
+        this->state = this->state + summand;
+        --this->pow;
+    }
+
+    inline void update_byte(const prep_key_t& pkey, uint8_t inputs)
+    {
+        for (size_t i = 0; i < 8; ++i)
+            this->update(pkey, poly1::load(inputs, i));
+    }
+
+    inline hash_t finalize() const
+    {
+        FAEST_ASSERT(this->pow == -1);
+        this->is_initialized = false;
+        return this->state.template reduce_to<secpar_to_bits(S)>();
+    }
+};
+
+template <secpar S> struct uhasher_gfsecpar_64
+{
+    using key_t = poly64;
+    using hash_t = poly_secpar<S>;
+
+    struct prep_key_t
+    {
+        key_t key;
+    };
+
+    poly_secpar<S> state;
+    int pow;
+    mutable bool is_initialized = false;
+
+    static inline prep_key_t preprocess_key(key_t key) { return {key}; }
+
+    inline void init(size_t)
+    {
+        this->state = poly_secpar<S>::set_zero();
+        this->is_initialized = true;
+    }
+
+    inline void update(const prep_key_t& pkey, poly_secpar<S> input)
+    {
+        FAEST_ASSERT(this->is_initialized);
+        this->state = (pkey.key * this->state).template reduce_to<secpar_to_bits(S)>();
+        this->state = this->state + input;
+    }
+    inline void update(const prep_key_t& pkey, poly1 input)
+    {
+        FAEST_ASSERT(this->is_initialized);
+        this->state = (pkey.key * this->state).template reduce_to<secpar_to_bits(S)>();
+        this->state = this->state + poly_secpar<S>::from(input);
+    }
+
+    inline void update_byte(const prep_key_t& pkey, uint8_t inputs)
+    {
+        for (size_t i = 0; i < 8; ++i)
+            this->update(pkey, poly1::load(inputs, i));
+    }
+
+    inline hash_t finalize() const
+    {
+        this->is_initialized = false;
+        return this->state;
+    }
+};
+
 // Number of powers of the hash key to precompute
 // For hasher_gfsecpar_64, there doesn't seem to be a good way to do more than 1.
 constexpr std::size_t HASHER_GFSECPAR_KEY_POWS = 2;

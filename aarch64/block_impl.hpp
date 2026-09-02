@@ -23,6 +23,12 @@ template <> struct block<128>
 {
     uint32x4_t data;
 
+    inline static block128 load(const void* p)
+    {
+        return {vld1q_u32(reinterpret_cast<const uint32_t*>(p))};
+    }
+    inline void store(void* p) const { vst1q_u32(reinterpret_cast<uint32_t*>(p), this->data); }
+
     inline block128 operator^(const block128& y) const { return {veorq_u32(this->data, y.data)}; }
     inline block128 operator&(const block128& y) const { return {vandq_u32(this->data, y.data)}; }
     inline block128 operator|(const block128& y) const { return {vorrq_u32(this->data, y.data)}; }
@@ -139,6 +145,19 @@ inline bool block192::any_zeros() const
 template <> struct block<256>
 {
     block128 data[2];
+
+    inline static block256 load(const void* p)
+    {
+        block256 out;
+        out.data[0] = block128::load(p);
+        out.data[1] = block128::load(reinterpret_cast<const uint8_t*>(p) + sizeof(out.data[0]));
+        return out;
+    }
+    inline void store(void* p) const
+    {
+        this->data[0].store(p);
+        this->data[1].store(reinterpret_cast<uint8_t*>(p) + sizeof(this->data[0]));
+    }
 
     inline block256 operator^(const block256& y) const
     {

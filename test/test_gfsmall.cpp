@@ -33,6 +33,74 @@ TEST_CASE("gf256_decompress_gf16_subfield", "[gfsmall]")
     }
 }
 
+#if 0 // disabled to save compile time, tested code is currently unused
+TEST_CASE("div_x64_by_q", "[gfsmall]")
+{
+    // m = X^64 // q
+    {
+        constexpr uint64_t q = 0b100011011;
+        constexpr uint64_t expected_m = 0x11a59bcec98e023;
+        constexpr auto m = detail::div_x64_by_q<q>();
+        REQUIRE(m == expected_m);
+    }
+    {
+        constexpr uint64_t q = 0x520466e7362;
+        constexpr uint64_t expected_m = 0x5767c3;
+        constexpr auto m = detail::div_x64_by_q<q>();
+        REQUIRE(m == expected_m);
+    }
+    {
+        constexpr uint64_t q = 0xf;
+        constexpr uint64_t expected_m = 0x3333333333333333;
+        constexpr auto m = detail::div_x64_by_q<q>();
+        REQUIRE(m == expected_m);
+    }
+}
+
+TEST_CASE("barret_reduce_64", "[gfsmall]")
+{
+    // m = p % q
+    {
+        constexpr uint64_t q = 0b100011011;
+        constexpr uint64_t p = 0x7e;
+        constexpr uint64_t expected_m = p;
+        auto m = barret_reduce_64<q>(p);
+        REQUIRE(m == expected_m);
+        m = barret_reduce_64_with_x64divq(p, q, detail::div_x64_by_q<q>());
+        REQUIRE(m == expected_m);
+    }
+    {
+        constexpr uint64_t q = 0x520466e7362;
+        constexpr uint64_t p = 0x12fe45a6094c5a5a;
+        constexpr uint64_t expected_m = 0x248f541bb44;
+        auto m = barret_reduce_64<q>(p);
+        REQUIRE(m == expected_m);
+        m = barret_reduce_64_with_x64divq(p, q, detail::div_x64_by_q<q>());
+        REQUIRE(m == expected_m);
+    }
+}
+#endif
+
+TEST_CASE("barret_reduce_64_with_x64divq", "[gfsmall]")
+{
+    {
+        constexpr auto q = 0b100011011;
+        constexpr auto x64_div_q = 0x11a59bcec98e023;
+        constexpr uint64_t p = 0x7e;
+        const auto m = barret_reduce_64_with_x64divq(p, q, x64_div_q);
+        REQUIRE(m == p);
+    }
+    {
+        constexpr uint64_t q = 0x520466e7362;
+        constexpr uint64_t x64_div_q = 0x5767c3;
+        constexpr uint64_t p = 0x12fe45a6094c5a5a;
+        constexpr uint64_t expected_m = 0x248f541bb44;
+        const auto m = barret_reduce_64_with_x64divq(p, q, x64_div_q);
+        REQUIRE(m == expected_m);
+    }
+}
+
+
 TEST_CASE("gf256_barret_reduce_64", "[gfsmall]")
 {
     for (size_t i = 0; i < POLY64S.size(); ++i)

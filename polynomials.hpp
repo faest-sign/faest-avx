@@ -156,9 +156,18 @@ template <> struct poly<128>
 
     inline static poly128 load_dup(const void* s) { return load(s); }
 
+    inline static poly128 from_block(block128 b) { return load(&b); }
+
     inline void store(void* d) const { memcpy(d, this, sizeof(*this)); }
 
     inline void store1(void* d) const { store(d); }
+
+    inline block128 to_block() const
+    {
+        block128 b;
+        store(&b);
+        return b;
+    }
 
     inline poly128 extract(size_t index) const
     {
@@ -168,7 +177,11 @@ template <> struct poly<128>
 
     template <std::size_t other_size> inline static poly128 from(poly<other_size> x)
     {
-        if constexpr (other_size == 64)
+        if constexpr (other_size == 1)
+        {
+            return from_1(x);
+        }
+        else if constexpr (other_size == 64)
         {
             // set the unused bits to zero
             return {x.data.zero_high64()};
@@ -241,9 +254,18 @@ template <> struct poly<192>
 
     inline static poly192 load_dup(const void* s) { return load(s); }
 
+    inline static poly192 from_block(block192 b) { return load(&b); }
+
     inline void store(void* d) const { memcpy(d, this, 24); }
 
     inline void store1(void* d) const { store(d); }
+
+    inline block192 to_block() const
+    {
+        block192 b;
+        store(&b);
+        return b;
+    }
 
     inline poly192 extract(size_t index) const
     {
@@ -254,7 +276,11 @@ template <> struct poly<192>
     template <std::size_t other_size> inline static poly192 from(poly<other_size> x)
     {
         poly192 out;
-        if constexpr (other_size == 64)
+        if constexpr (other_size == 1)
+        {
+            return from_1(x);
+        }
+        else if constexpr (other_size == 64)
         {
             return from(poly128::from(x));
         }
@@ -340,9 +366,18 @@ template <> struct poly<256>
 
     inline static poly256 load_dup(const void* s) { return load(s); }
 
+    inline static poly256 from_block(block256 b) { return load(&b); }
+
     inline void store(void* d) const { memcpy(d, this, sizeof(*this)); }
 
     inline void store1(void* d) const { store(d); }
+
+    inline block256 to_block() const
+    {
+        block256 b;
+        store(&b);
+        return b;
+    }
 
     inline poly256 extract(size_t index) const
     {
@@ -353,7 +388,11 @@ template <> struct poly<256>
     template <std::size_t other_size> inline static poly256 from(poly<other_size> x)
     {
         poly256 out;
-        if constexpr (other_size == 64)
+        if constexpr (other_size == 1)
+        {
+            return from_1(x);
+        }
+        else if constexpr (other_size == 64)
         {
             return from(poly128::from(x));
         }
@@ -550,7 +589,14 @@ template <> struct poly<384>
     template <std::size_t other_size> inline static poly384 from(poly<other_size> x)
     {
         poly384 out;
-        if constexpr (other_size == 192)
+        if constexpr (other_size == 1)
+        {
+            out.data[0] = poly128::from(x);
+            out.data[1] = {clmul_block::set_zero()};
+            out.data[2] = {clmul_block::set_zero()};
+            return out;
+        }
+        else if constexpr (other_size == 192)
         {
             out.data[0] = x.data[0];
             out.data[1] = {x.data[1].data.zero_high64()};
@@ -650,7 +696,15 @@ template <> struct poly<512>
     template <std::size_t other_size> inline static poly512 from(poly<other_size> x)
     {
         poly512 out;
-        if constexpr (other_size == 256)
+        if constexpr (other_size == 1)
+        {
+            out.data[0] = poly128::from(x);
+            out.data[1] = {clmul_block::set_zero()};
+            out.data[2] = {clmul_block::set_zero()};
+            out.data[3] = {clmul_block::set_zero()};
+            return out;
+        }
+        else if constexpr (other_size == 256)
         {
             out.data[0] = x.data[0];
             out.data[1] = x.data[1];

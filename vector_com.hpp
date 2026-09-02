@@ -207,11 +207,15 @@ static void stat_binding_leaf_hash_iv_impl(
     const std::array<poly_secpar<PRG::secpar_v>, 3>& hash_iv, typename PRG::tweak_t tweak,
     typename PRG::key_t** keys_out, unsigned char* hashes_out);
 
-// Leaf hash based on a PRG, which uses a universal hash to make it statistically binding.
-// The resulting hash are each 3 secpar bits long. This requires an iv consisting of a PRG iv and a 3 secpar bit universal hash.
-template <typename PRG, uint32_t MAX_TWEAKS>
+// Leaf hash based on a PRG, which uses a universal hash to make it statistically binding.  The
+// resulting hash are each 3 secpar bits long. This requires an iv consisting of a PRG iv and a 3
+// secpar bit universal hash.
+//
+// If SAME_HASH is true, we use the same universal hash function for all `small_tweak`s.
+template <typename PRG, uint32_t MAX_TWEAKS_, bool SAME_HASH>
 struct stat_binding_leaf_hash
 {
+    static constexpr auto MAX_TWEAKS = SAME_HASH ? 1 : MAX_TWEAKS_;
     static constexpr secpar secpar_v = PRG::secpar_v;
     static constexpr size_t hash_len = 3 * secpar_to_bytes(secpar_v);
     using key_t = block_secpar<secpar_v>;
@@ -224,8 +228,8 @@ struct stat_binding_leaf_hash
 
         explicit iv_t(PRG::iv_t prg_iv_) : prg_iv(prg_iv_)
         {
-            unsigned char hash_iv[MAX_TWEAKS * 3 * secpar_to_bytes(secpar_v)];
-            stat_binding_leaf_hash_iv_impl(secpar_v, prg_iv, hash_iv, MAX_TWEAKS);
+            std::array<uint8_t, MAX_TWEAKS * 3 * secpar_to_bytes(secpar_v)> hash_iv;
+            stat_binding_leaf_hash_iv_impl(secpar_v, prg_iv, hash_iv.data(), MAX_TWEAKS);
 
             for (uint32_t t = 0; t < MAX_TWEAKS; ++t)
                 for (int j = 0; j < 3; ++j)
@@ -241,8 +245,18 @@ struct stat_binding_leaf_hash
     static void hash(const key_t* keys_in, const iv_t& iv, tweak_t tweak, tweak_t small_tweak,
                      key_t** keys_out, unsigned char* hashes_out)
     {
-        stat_binding_leaf_hash_impl<PRG, num_keys>(
-            keys_in, iv.prg_iv, iv.universal_hash[small_tweak], tweak, keys_out, hashes_out);
+        if constexpr (SAME_HASH)
+        {
+            (void)small_tweak;
+            stat_binding_leaf_hash_impl<PRG, num_keys>(keys_in, iv.prg_iv, iv.universal_hash[0],
+                                                       tweak, keys_out, hashes_out);
+        }
+        else
+        {
+            FAEST_ASSERT(small_tweak < MAX_TWEAKS);
+            stat_binding_leaf_hash_impl<PRG, num_keys>(
+                keys_in, iv.prg_iv, iv.universal_hash[small_tweak], tweak, keys_out, hashes_out);
+        }
     }
 };
 

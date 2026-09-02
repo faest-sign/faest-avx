@@ -112,17 +112,32 @@ vole(unsigned int k, const block_secpar<P::secpar_v>* __restrict__ keys,
 {
     using CP = CONSTANTS<P>;
 
-    vole_block accum[COL_LEN<P>];
-    memset(&accum[0], 0, COL_LEN<P> * sizeof(vole_block));
+    assert(k >= CP::VOLE_WIDTH_SHIFT);
 
-    if (receiver && u_or_c_in)
+    std::array<vole_block, CP::VOLE_COL_BLOCKS> accum{}; // zero-initialized
+
+    if (receiver && u_or_c_in) // receiver only, for all but the first small VOLE
     {
-        vole_block* q_ptr = vq;
+        constexpr auto COL_BYTE_LEN = COL_LEN<P> * sizeof(vole_block);
+        auto* q_byte_ptr = reinterpret_cast<uint8_t*>(vq);
         for (unsigned int col = 0; col < k; ++col)
-            for (size_t j = 0; j < COL_LEN<P>; ++j)
-                *(q_ptr++) = u_or_c_in[j] & vole_block::set_all_8(delta[col]);
+        {
+            if (delta[col])
+            {
+                // correct first rows
+                memcpy(q_byte_ptr, u_or_c_in, CP::VOLE_CORRECTION_BYTES);
+                // zero last rows
+                memset(q_byte_ptr + CP::VOLE_CORRECTION_BYTES, 0x00,
+                       COL_BYTE_LEN - CP::VOLE_CORRECTION_BYTES);
+            }
+            else
+            {
+                memset(q_byte_ptr, 0x00, COL_BYTE_LEN);
+            }
+            q_byte_ptr += COL_BYTE_LEN;
+        }
     }
-    else
+    else // sender, or receiver (for the first small VOLE)
     {
         memset(&vq[0], 0, COL_LEN<P> * k * sizeof(vole_block));
     }
@@ -131,19 +146,19 @@ vole(unsigned int k, const block_secpar<P::secpar_v>* __restrict__ keys,
     typename P::vole_prg_t::block_t raw_prg_output[CP::VOLE_WIDTH * CP::PRG_VOLE_BLOCKS];
 
     size_t i = 0;
-    if constexpr (receiver)
+    if constexpr (receiver) // receiver only
     {
         // Handle first iteration separately, since the 0th PRG key is a dummy.
 
         P::vole_prg_t::template init<CP::VOLE_WIDTH - 1, CP::PRG_VOLE_BLOCKS>(
             &keys[1], expanded_keys, iv, tweak, 0, raw_prg_output);
-        process_prg_output<P, true>(0, 0, accum, vq, raw_prg_output);
+        process_prg_output<P, true>(0, 0, accum.data(), vq, raw_prg_output);
 
         for (size_t j = 1; j < COL_LEN<P>; ++j)
         {
             P::vole_prg_t::template gen<CP::VOLE_WIDTH - 1, CP::PRG_VOLE_BLOCKS>(
                 expanded_keys, iv, tweak, j * CP::PRG_VOLE_BLOCKS, raw_prg_output);
-            process_prg_output<P, true>(j, 0, accum, vq, raw_prg_output);
+            process_prg_output<P, true>(j, 0, accum.data(), vq, raw_prg_output);
         }
 
         i = CP::VOLE_WIDTH;
@@ -156,23 +171,56 @@ vole(unsigned int k, const block_secpar<P::secpar_v>* __restrict__ keys,
 
         P::vole_prg_t::template init<CP::VOLE_WIDTH, CP::PRG_VOLE_BLOCKS>(
             &keys[i], expanded_keys, iv, tweak, 0, raw_prg_output);
-        process_prg_output<P, false>(0, output_col, accum, vq, raw_prg_output);
+        process_prg_output<P, false>(0, output_col, accum.data(), vq, raw_prg_output);
 
         for (size_t j = 1; j < COL_LEN<P>; ++j)
         {
             P::vole_prg_t::template gen<CP::VOLE_WIDTH, CP::PRG_VOLE_BLOCKS>(
                 expanded_keys, iv, tweak, j * CP::PRG_VOLE_BLOCKS, raw_prg_output);
-            process_prg_output<P, false>(j, output_col, accum, vq, raw_prg_output);
+            process_prg_output<P, false>(j, output_col, accum.data(), vq, raw_prg_output);
         }
     }
 
-    if constexpr (!receiver)
+    if constexpr (!receiver) // sender only
     {
-        if (u_or_c_in)
-            for (size_t j = 0; j < COL_LEN<P>; ++j)
+        if (u_or_c_in) // for all but the first small VOLE
+        {
+            constexpr auto FULL_VOLE_CORRECTION_BLOCKS =
+                CP::VOLE_CORRECTION_ROWS / (128 * CP::VOLE_BLOCK);
+            constexpr auto LEFTOVER_CORRECTION_BYTES =
+                (CP::VOLE_CORRECTION_ROWS % (128 * CP::VOLE_BLOCK)) / 8;
+            constexpr auto START_UNCORRECTED_BLOCKS =
+                FULL_VOLE_CORRECTION_BLOCKS + (LEFTOVER_CORRECTION_BYTES == 0 ? 0 : 1);
+            // correct first full blocks
+            for (size_t j = 0; j < FULL_VOLE_CORRECTION_BLOCKS; ++j)
                 c_out[j] = u_or_c_in[j] ^ accum[j];
-        else
-            memcpy(c_out, accum, sizeof(accum));
+            // handle a potentially mixed block
+            if constexpr (LEFTOVER_CORRECTION_BYTES > 0)
+            {
+                // create a `vole_block` mask that has the first LEFTOVER_CORRECTION_BYTES set
+                // to 0xff
+                constexpr auto mask_bytes = [] consteval
+                {
+                    alignas(alignof(vole_block)) std::array<uint8_t, sizeof(vole_block)>
+                        mask_bytes = {};
+                    std::fill_n(mask_bytes.begin(), LEFTOVER_CORRECTION_BYTES, 0xff);
+                    return mask_bytes;
+                }();
+                const auto mask = std::bit_cast<const vole_block>(mask_bytes);
+                // use this mask to choose the correction or not
+                c_out[FULL_VOLE_CORRECTION_BLOCKS] =
+                    (mask & u_or_c_in[FULL_VOLE_CORRECTION_BLOCKS]) ^
+                    accum[FULL_VOLE_CORRECTION_BLOCKS];
+            }
+            if constexpr (START_UNCORRECTED_BLOCKS < CP::VOLE_COL_BLOCKS)
+            {
+                // copy u for the remainder
+                memcpy(&c_out[START_UNCORRECTED_BLOCKS], &accum[START_UNCORRECTED_BLOCKS],
+                       (CP::VOLE_COL_BLOCKS - START_UNCORRECTED_BLOCKS) * sizeof(vole_block));
+            }
+        }
+        else // for the first small VOLE
+            memcpy(c_out, accum.data(), sizeof(accum));
     }
 }
 

@@ -23,13 +23,24 @@ constexpr std::size_t secpar_to_bytes(secpar s) { return secpar_to_bits(s) / 8; 
 
 namespace
 {
+// - Is the underlying OWF AES?
 constexpr unsigned int owf_algo_ecb = 0;
+// - Is the underlying OWF fixed-key AES?
 constexpr unsigned int owf_algo_em = 2;
+// - Number of bits to shift the algorithm field.
 constexpr unsigned int owf_algo_shift = 8;
-constexpr unsigned int owf_flag_zero_sboxes = 0b0001;
-constexpr unsigned int owf_flag_norm_proof = 0b0010;
-constexpr unsigned int owf_flag_shrunk_keyspace = 0b0100;
-constexpr unsigned int owf_flag_ctr_input = 0b1000;
+// - Are zeros allowed in the S-boxes?
+constexpr unsigned int owf_flag_zero_sboxes = 0b0'0001;
+// - Do we use the degree-3 norm proof?
+constexpr unsigned int owf_flag_norm_proof = 0b0'0010;
+// - Do we need to enfore a smaller key space?
+constexpr unsigned int owf_flag_shrunk_keyspace = 0b0'0100;
+// - For multiple input blocks, are they chosen in counter mode?
+constexpr unsigned int owf_flag_ctr_input = 0b0'1000;
+// - Do we use the degree-7 proof from v3?
+constexpr unsigned int owf_flag_deg7_proof = 0b1'0000;
+// - Do we need to prove the witness contains bits?
+constexpr unsigned int owf_flag_witness_bits_check = 0b10'0000;
 } // namespace
 
 // Enum of the supported one-way functions
@@ -46,6 +57,12 @@ enum class owf : unsigned int
     v2 = aes_ecb | owf_flag_zero_sboxes | owf_flag_norm_proof | owf_flag_shrunk_keyspace |
          owf_flag_ctr_input,
     v2_em = aes_em | owf_flag_zero_sboxes | owf_flag_norm_proof | owf_flag_shrunk_keyspace,
+    v3 = aes_ecb | owf_flag_zero_sboxes | owf_flag_deg7_proof | owf_flag_shrunk_keyspace |
+         owf_flag_ctr_input | owf_flag_witness_bits_check,
+    v3_em = aes_em | owf_flag_zero_sboxes | owf_flag_deg7_proof | owf_flag_shrunk_keyspace |
+            owf_flag_witness_bits_check,
+    v3_deg3 = v2 | owf_flag_witness_bits_check,
+    v3_em_deg3 = v2_em | owf_flag_witness_bits_check,
 };
 
 constexpr bool is_owf_with_aes_ecb(owf o)
@@ -72,6 +89,13 @@ constexpr bool is_owf_with_shrunk_keyspace(owf o)
 
 constexpr bool is_owf_with_ctr_input(owf o) { return std::to_underlying(o) & owf_flag_ctr_input; }
 
+constexpr bool is_owf_with_deg7_proof(owf o) { return std::to_underlying(o) & owf_flag_deg7_proof; }
+
+constexpr bool is_owf_with_witness_bits_check(owf o)
+{
+    return std::to_underlying(o) & owf_flag_witness_bits_check;
+}
+
 // Enum of the supported PRGs
 enum class prg
 {
@@ -84,6 +108,7 @@ enum class leaf_hash
 {
     aes_ctr,
     aes_ctr_stat_bind,
+    aes_ctr_stat_bind_same_hash,
     rijndael_fixed_key_ctr,
     rijndael_fixed_key_ctr_stat_bind,
     shake,
@@ -95,7 +120,7 @@ template <secpar S> struct rijndael_fixed_key_ctr_prg;
 
 // Defined in vector_com.hpp
 template <typename PRG> struct prg_leaf_hash;
-template <typename PRG, uint32_t MAX_TWEAKS> struct stat_binding_leaf_hash;
+template <typename PRG, uint32_t MAX_TWEAKS, bool SAME_HASH> struct stat_binding_leaf_hash;
 template <secpar S> struct shake_leaf_hash;
 
 // Template to obtain the PRG type corresponding to a prg enum value
@@ -122,7 +147,12 @@ struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::aes_ctr>
 template <secpar S, uint32_t MAX_TWEAKS>
 struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::aes_ctr_stat_bind>
 {
-    using type = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS>;
+    using type = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS, false>;
+};
+template <secpar S, uint32_t MAX_TWEAKS>
+struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::aes_ctr_stat_bind_same_hash>
+{
+    using type = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS, true>;
 };
 template <secpar S, uint32_t MAX_TWEAKS>
 struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::rijndael_fixed_key_ctr>
@@ -132,7 +162,7 @@ struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::rijndael_fixed_key_ctr>
 template <secpar S, uint32_t MAX_TWEAKS>
 struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::rijndael_fixed_key_ctr_stat_bind>
 {
-    using type = stat_binding_leaf_hash<rijndael_fixed_key_ctr_prg<S>, MAX_TWEAKS>;
+    using type = stat_binding_leaf_hash<rijndael_fixed_key_ctr_prg<S>, MAX_TWEAKS, false>;
 };
 template <secpar S, uint32_t MAX_TWEAKS>
 struct leaf_hash_type<S, MAX_TWEAKS, leaf_hash::shake>
@@ -193,7 +223,8 @@ template <typename P> struct CONSTANTS;
 // - number of zero bits in Delta
 template <secpar S, std::size_t TAU, owf OWF, prg VOLE_PRG, prg TREE_PRG = prg::aes_ctr,
           leaf_hash LEAF_HASH = leaf_hash::shake, std::size_t ZERO_BITS_IN_DELTA = 0,
-          std::pair<bavc, std::size_t> BAVC = {bavc::ggm_forest, 0}>
+          std::pair<bavc, std::size_t> BAVC = {bavc::ggm_forest, 0}, bool CRT_VOLE_MASKS = false,
+          bool HASH_INPUTS_V3 = false>
 struct parameter_set
 {
     // Values of the template parameters as constants
@@ -204,6 +235,12 @@ struct parameter_set
     constexpr static prg tree_prg_v = TREE_PRG;
     constexpr static leaf_hash leaf_hash_v = LEAF_HASH;
     constexpr static std::size_t zero_bits_in_delta_v = ZERO_BITS_IN_DELTA;
+    constexpr static bool use_crt_vole_masks = CRT_VOLE_MASKS;
+
+    // In v3 we made some changes on what data is included in the hashes during the Fiat-Shamir
+    // transformation. This should be the new standard. For now it is an option s.t. we can still
+    // use v2 test vectors.
+    constexpr static bool use_v3_hash_inputs = HASH_INPUTS_V3;
 
     // Shorthands for the security parameter in bits and bytes
     constexpr static std::size_t secpar_bits = secpar_to_bits(S);
@@ -213,10 +250,17 @@ struct parameter_set
     constexpr static std::size_t delta_bits_v = secpar_bits - zero_bits_in_delta_v;
 
     // Access to the implementation constants that depend on the parameters
-    using CONSTS = CONSTANTS<
-        parameter_set<S, TAU, OWF, VOLE_PRG, TREE_PRG, LEAF_HASH, ZERO_BITS_IN_DELTA, BAVC>>;
+    using CONSTS =
+        CONSTANTS<parameter_set<S, TAU, OWF, VOLE_PRG, TREE_PRG, LEAF_HASH, ZERO_BITS_IN_DELTA,
+                                BAVC, CRT_VOLE_MASKS, HASH_INPUTS_V3>>;
     // Access to the one-way function constants that depend on the parameters
     using OWF_CONSTS = OWF_CONSTANTS<S, OWF>;
+    static_assert(CONSTS::valid, "CONSTS are invalid");
+    static_assert(OWF_CONSTS::valid, "OWF_CONSTS are invalid");
+
+    static_assert(
+        !use_crt_vole_masks || is_owf_with_witness_bits_check(owf_v),
+        "When CRT VOLECommit is used, we need to prove that the witness consists of bits.");
 
     // The types of the selected PRGs
     using leaf_hash_t = leaf_hash_type_t<S, TAU, LEAF_HASH>;
@@ -236,24 +280,31 @@ struct parameter_set
         else
             return 0;
     }();
+
+    constexpr static bool valid = true;
 };
 
 // The FAEST v1 instances
 namespace v1
 {
-using faest_128_s = parameter_set<secpar::s128, 11, owf::aes_ecb, prg::aes_ctr>;
-using faest_128_f = parameter_set<secpar::s128, 16, owf::aes_ecb, prg::aes_ctr>;
-using faest_192_s = parameter_set<secpar::s192, 16, owf::aes_ecb, prg::aes_ctr>;
-using faest_192_f = parameter_set<secpar::s192, 24, owf::aes_ecb, prg::aes_ctr>;
-using faest_256_s = parameter_set<secpar::s256, 22, owf::aes_ecb, prg::aes_ctr>;
-using faest_256_f = parameter_set<secpar::s256, 32, owf::aes_ecb, prg::aes_ctr>;
+template <secpar S, std::size_t TAU, bool IS_EM>
+using v1_parameter_set =
+    parameter_set<S, TAU, (IS_EM ? owf::v1_em : owf::v1), prg::aes_ctr, prg::aes_ctr,
+                  leaf_hash::shake, 0, {bavc::ggm_forest, 0}, false, false>;
 
-using faest_em_128_s = parameter_set<secpar::s128, 11, owf::aes_em, prg::aes_ctr>;
-using faest_em_128_f = parameter_set<secpar::s128, 16, owf::aes_em, prg::aes_ctr>;
-using faest_em_192_s = parameter_set<secpar::s192, 16, owf::aes_em, prg::aes_ctr>;
-using faest_em_192_f = parameter_set<secpar::s192, 24, owf::aes_em, prg::aes_ctr>;
-using faest_em_256_s = parameter_set<secpar::s256, 22, owf::aes_em, prg::aes_ctr>;
-using faest_em_256_f = parameter_set<secpar::s256, 32, owf::aes_em, prg::aes_ctr>;
+using faest_128_f = v1_parameter_set<secpar::s128, 16, false>;
+using faest_128_s = v1_parameter_set<secpar::s128, 11, false>;
+using faest_192_f = v1_parameter_set<secpar::s192, 24, false>;
+using faest_192_s = v1_parameter_set<secpar::s192, 16, false>;
+using faest_256_f = v1_parameter_set<secpar::s256, 32, false>;
+using faest_256_s = v1_parameter_set<secpar::s256, 22, false>;
+
+using faest_em_128_f = v1_parameter_set<secpar::s128, 16, true>;
+using faest_em_128_s = v1_parameter_set<secpar::s128, 11, true>;
+using faest_em_192_f = v1_parameter_set<secpar::s192, 24, true>;
+using faest_em_192_s = v1_parameter_set<secpar::s192, 16, true>;
+using faest_em_256_f = v1_parameter_set<secpar::s256, 32, true>;
+using faest_em_256_s = v1_parameter_set<secpar::s256, 22, true>;
 } // namespace v1
 
 // Macro listing all instances, useful to instantiate tests with all parameter sets
@@ -262,37 +313,28 @@ using faest_em_256_f = parameter_set<secpar::s256, 32, owf::aes_em, prg::aes_ctr
         v1::faest_256_f, v1::faest_em_128_s, v1::faest_em_128_f, v1::faest_em_192_s,               \
         v1::faest_em_192_f, v1::faest_em_256_s, v1::faest_em_256_f
 
-// The FAEST v2 instances (XXX: not finalized yet)
+// The FAEST v2 instances
 namespace v2
 {
-    // Also seemed like a decent tradeoff:
-    // using faest_128_s = parameter_set<secpar::s128, 10, owf::v2, prg::aes_ctr, prg::aes_ctr, leaf_hash::aes_ctr_stat_bind, 12, {bavc::one_tree, 105}>;
+template <secpar S, std::size_t TAU, bool IS_EM, std::size_t W_GRIND, std::size_t T_OPEN>
+using v2_parameter_set =
+    parameter_set<S, TAU, (IS_EM ? owf::v2_em : owf::v2), prg::aes_ctr, prg::aes_ctr,
+                  (IS_EM ? leaf_hash::aes_ctr : leaf_hash::aes_ctr_stat_bind), W_GRIND,
+                  {bavc::one_tree, T_OPEN}, false, false>;
 
-using faest_128_s = parameter_set<secpar::s128, 11, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 7, {bavc::one_tree, 102}>;
-using faest_128_f = parameter_set<secpar::s128, 16, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 8, {bavc::one_tree, 110}>;
-using faest_192_s = parameter_set<secpar::s192, 16, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 12, {bavc::one_tree, 162}>;
-using faest_192_f = parameter_set<secpar::s192, 24, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 8, {bavc::one_tree, 163}>;
-using faest_256_s = parameter_set<secpar::s256, 22, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 6, {bavc::one_tree, 245}>;
-using faest_256_f = parameter_set<secpar::s256, 32, owf::v2, prg::aes_ctr, prg::aes_ctr,
-                                  leaf_hash::aes_ctr_stat_bind, 8, {bavc::one_tree, 246}>;
+using faest_128_f = v2_parameter_set<secpar::s128, 16, false, 8, 110>;
+using faest_128_s = v2_parameter_set<secpar::s128, 11, false, 7, 102>;
+using faest_192_f = v2_parameter_set<secpar::s192, 24, false, 8, 163>;
+using faest_192_s = v2_parameter_set<secpar::s192, 16, false, 12, 162>;
+using faest_256_f = v2_parameter_set<secpar::s256, 32, false, 8, 246>;
+using faest_256_s = v2_parameter_set<secpar::s256, 22, false, 6, 245>;
 
-using faest_em_128_s = parameter_set<secpar::s128, 11, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 7, {bavc::one_tree, 103}>;
-using faest_em_128_f = parameter_set<secpar::s128, 16, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 8, {bavc::one_tree, 112}>;
-using faest_em_192_s = parameter_set<secpar::s192, 16, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 8, {bavc::one_tree, 162}>;
-using faest_em_192_f = parameter_set<secpar::s192, 24, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 8, {bavc::one_tree, 176}>;
-using faest_em_256_s = parameter_set<secpar::s256, 22, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 6, {bavc::one_tree, 218}>;
-using faest_em_256_f = parameter_set<secpar::s256, 32, owf::v2_em, prg::aes_ctr, prg::aes_ctr,
-                                     leaf_hash::aes_ctr, 8, {bavc::one_tree, 234}>;
+using faest_em_128_f = v2_parameter_set<secpar::s128, 16, true, 8, 112>;
+using faest_em_128_s = v2_parameter_set<secpar::s128, 11, true, 7, 103>;
+using faest_em_192_f = v2_parameter_set<secpar::s192, 24, true, 8, 176>;
+using faest_em_192_s = v2_parameter_set<secpar::s192, 16, true, 8, 162>;
+using faest_em_256_f = v2_parameter_set<secpar::s256, 32, true, 8, 234>;
+using faest_em_256_s = v2_parameter_set<secpar::s256, 22, true, 6, 218>;
 } // namespace v2
 
 // Macro listing all instances, useful to instantiate tests with all parameter sets
@@ -301,7 +343,67 @@ using faest_em_256_f = parameter_set<secpar::s256, 32, owf::v2_em, prg::aes_ctr,
         v2::faest_256_f, v2::faest_em_128_s, v2::faest_em_128_f, v2::faest_em_192_s,               \
         v2::faest_em_192_f, v2::faest_em_256_s, v2::faest_em_256_f
 
-#define ALL_FAEST_INSTANCES ALL_FAEST_V1_INSTANCES, ALL_FAEST_V2_INSTANCES
+// The (preliminary) FAEST v3 instances
+namespace v3
+{
+template <secpar S, std::size_t TAU, bool IS_EM, std::size_t W_GRIND, std::size_t T_OPEN>
+using v3_parameter_set =
+    parameter_set<S, TAU, (IS_EM ? owf::v3_em : owf::v3), prg::aes_ctr, prg::aes_ctr,
+                  (IS_EM ? leaf_hash::aes_ctr : leaf_hash::aes_ctr_stat_bind_same_hash), W_GRIND,
+                  {bavc::one_tree, T_OPEN}, true, true>;
+
+using faest_128_f = v3_parameter_set<secpar::s128, 17, false, 8, 108>;
+using faest_128_s = v3_parameter_set<secpar::s128, 11, false, 7, 102>;
+using faest_192_f = v3_parameter_set<secpar::s192, 24, false, 8, 163>;
+using faest_192_s = v3_parameter_set<secpar::s192, 16, false, 12, 162>;
+using faest_256_f = v3_parameter_set<secpar::s256, 33, false, 8, 229>;
+using faest_256_s = v3_parameter_set<secpar::s256, 22, false, 6, 225>;
+
+using faest_em_128_f = v3_parameter_set<secpar::s128, 17, true, 8, 105>;
+using faest_em_128_s = v3_parameter_set<secpar::s128, 11, true, 7, 103>;
+using faest_em_192_f = v3_parameter_set<secpar::s192, 25, true, 8, 171>;
+using faest_em_192_s = v3_parameter_set<secpar::s192, 16, true, 8, 162>;
+using faest_em_256_f = v3_parameter_set<secpar::s256, 33, true, 8, 229>;
+using faest_em_256_s = v3_parameter_set<secpar::s256, 22, true, 6, 218>;
+} // namespace v3
+
+// Versions of FAEST v3 with the old degree-3 QuickSilver proof.
+namespace v3_deg3
+{
+template <secpar S, std::size_t TAU, bool IS_EM, std::size_t W_GRIND, std::size_t T_OPEN>
+using v3_deg3_parameter_set =
+    parameter_set<S, TAU, (IS_EM ? owf::v3_em_deg3 : owf::v3_deg3), prg::aes_ctr, prg::aes_ctr,
+                  (IS_EM ? leaf_hash::aes_ctr : leaf_hash::aes_ctr_stat_bind_same_hash), W_GRIND,
+                  {bavc::one_tree, T_OPEN}, true, true>;
+
+using faest_128_f = v3_deg3_parameter_set<secpar::s128, 17, false, 8, 108>;
+using faest_128_s = v3_deg3_parameter_set<secpar::s128, 11, false, 7, 102>;
+using faest_192_f = v3_deg3_parameter_set<secpar::s192, 24, false, 8, 163>;
+using faest_192_s = v3_deg3_parameter_set<secpar::s192, 16, false, 12, 162>;
+using faest_256_f = v3_deg3_parameter_set<secpar::s256, 33, false, 8, 229>;
+using faest_256_s = v3_deg3_parameter_set<secpar::s256, 22, false, 6, 225>;
+
+using faest_em_128_f = v3_deg3_parameter_set<secpar::s128, 17, true, 8, 105>;
+using faest_em_128_s = v3_deg3_parameter_set<secpar::s128, 11, true, 7, 103>;
+using faest_em_192_f = v3_deg3_parameter_set<secpar::s192, 25, true, 8, 171>;
+using faest_em_192_s = v3_deg3_parameter_set<secpar::s192, 16, true, 8, 162>;
+using faest_em_256_f = v3_deg3_parameter_set<secpar::s256, 33, true, 8, 229>;
+using faest_em_256_s = v3_deg3_parameter_set<secpar::s256, 22, true, 6, 218>;
+} // namespace v3_deg3
+
+// Macro listing all instances, useful to instantiate tests with all parameter sets
+#define ALL_FAEST_V3_INSTANCES                                                                     \
+    v3::faest_128_s, v3::faest_128_f, v3::faest_192_s, v3::faest_192_f, v3::faest_256_s,           \
+        v3::faest_256_f, v3::faest_em_128_s, v3::faest_em_128_f, v3::faest_em_192_s,               \
+        v3::faest_em_192_f, v3::faest_em_256_s, v3::faest_em_256_f
+
+#define ALL_FAEST_V3_DEG3_INSTANCES                                                                \
+    v3_deg3::faest_128_s, v3_deg3::faest_128_f, v3_deg3::faest_192_s, v3_deg3::faest_192_f,        \
+        v3_deg3::faest_256_s, v3_deg3::faest_256_f, v3_deg3::faest_em_128_s,                       \
+        v3_deg3::faest_em_128_f, v3_deg3::faest_em_192_s, v3_deg3::faest_em_192_f,                 \
+        v3_deg3::faest_em_256_s, v3_deg3::faest_em_256_f
+
+#define ALL_FAEST_INSTANCES ALL_FAEST_V2_INSTANCES, ALL_FAEST_V3_INSTANCES
 
 } // namespace faest
 

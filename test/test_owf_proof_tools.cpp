@@ -9,6 +9,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+using namespace faest::zk;
 
 TEMPLATE_TEST_CASE("gf256_square", "[quicksilver]", secpar128_t, secpar192_t, secpar256_t)
 {

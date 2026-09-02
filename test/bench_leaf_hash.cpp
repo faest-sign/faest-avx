@@ -14,11 +14,15 @@
 constexpr size_t MAX_TWEAKS = 16;
 
 template <secpar S>
-using aes_ctr_stat_bind_leaf_hash = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS>;
+using aes_ctr_stat_bind_leaf_hash = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS, false>;
+template <secpar S>
+using aes_ctr_stat_bind_leaf_hash_same_uhash = stat_binding_leaf_hash<aes_ctr_prg<S>, MAX_TWEAKS, true>;
 
 template <secpar S> using aes_ctr_leaf_hash = prg_leaf_hash<aes_ctr_prg<S>>;
 
-#define LEAF_HASHES(S) shake_leaf_hash<S>, aes_ctr_stat_bind_leaf_hash<S>, aes_ctr_leaf_hash<S>
+#define LEAF_HASHES(S)                                                                             \
+    shake_leaf_hash<S>, aes_ctr_stat_bind_leaf_hash<S>, aes_ctr_stat_bind_leaf_hash_same_uhash<S>, \
+        aes_ctr_leaf_hash<S>
 
 #define ALL_LEAF_HASHES                                                                            \
     LEAF_HASHES(secpar::s128), LEAF_HASHES(secpar::s192), LEAF_HASHES(secpar::s256)
@@ -70,6 +74,8 @@ TEMPLATE_TEST_CASE("bench leaf_hash", "[.][bench][leaf_hash]", ALL_LEAF_HASHES)
               << "}";
 }
 
+#if 0
+
 template <leaf_hash LH>
 using bavc_128_s = one_tree_bavc<secpar::s128, 11, 121, prg::aes_ctr, LH, 3, 102>;
 template <leaf_hash LH>
@@ -90,7 +96,7 @@ using bavc_256_f = one_tree_bavc<secpar::s256, 32, 248, prg::aes_ctr, LH, 3, 246
     BAVC_BENCH_INSTANCES(leaf_hash::shake), BAVC_BENCH_INSTANCES(leaf_hash::aes_ctr_stat_bind),    \
         BAVC_BENCH_INSTANCES(leaf_hash::aes_ctr)
 
-TEMPLATE_TEST_CASE("bench commit/grind_open/verify with leaf_hash", "[leaf_hash]",
+TEMPLATE_TEST_CASE("bench commit/grind_open/verify with leaf_hash", "[.][bench][leaf_hash]",
                    ALL_BAVC_BENCH_INSTANCES)
 {
     using bavc_t = TestType;
@@ -341,3 +347,5 @@ TEMPLATE_TEST_CASE("bench sign with leaf_hash", "[.][bench][leaf_hash]", ALL_BEN
                                        reinterpret_cast<const unsigned char*>(message.c_str()) +
                                            message.size()));
 }
+
+#endif

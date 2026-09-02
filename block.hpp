@@ -33,6 +33,14 @@ template <> struct block<384>
 {
     block128 data[3];
 
+    inline static block384 load(const void* p)
+    {
+        block384 out;
+        memcpy(&out, p, sizeof(out));
+        return out;
+    }
+    inline void store(void* p) const { memcpy(p, &data, sizeof(data)); }
+
     inline block384 operator^(const block384& y) const
     {
         block384 out;
@@ -111,6 +119,14 @@ template <> struct block<384>
 template <> struct block<512>
 {
     block256 data[2];
+
+    inline static block512 load(const void* p)
+    {
+        block512 out;
+        memcpy(&out, p, sizeof(out));
+        return out;
+    }
+    inline void store(void* p) const { memcpy(p, &data, sizeof(data)); }
 
     inline block512 operator^(const block512& y) const
     {

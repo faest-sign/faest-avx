@@ -4,6 +4,7 @@
 #include "block.hpp"
 #include <cinttypes>
 #include <cstddef>
+#include <span>
 
 extern "C"
 {
@@ -29,12 +30,22 @@ struct hash_state
             return Keccak_HashInitialize_SHAKE256(&this->ctx);
     }
 
+    inline int update(std::span<const uint8_t> input)
+    {
+        return this->update(input.data(), input.size());
+    }
+
     inline int update(const void* input, size_t bytes)
     {
         return Keccak_HashUpdate(&this->ctx, (const uint8_t*)input, bytes * 8);
     }
 
     inline int update_byte(uint8_t b) { return this->update(&b, 1); }
+
+    inline int finalize(std::span<uint8_t> digest)
+    {
+        return this->finalize(digest.data(), digest.size());
+    }
 
     inline int finalize(void* digest, size_t bytes)
     {
@@ -70,6 +81,11 @@ struct hash_state_x4
     {
         const void* data[4] = {data0, data1, data2, data3};
         this->update(data, size);
+    }
+
+    inline void update_1(std::span<const uint8_t> input)
+    {
+        this->update_1(input.data(), input.size());
     }
 
     inline void update_1(const void* data, size_t size)

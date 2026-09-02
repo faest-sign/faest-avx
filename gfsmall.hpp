@@ -17,6 +17,64 @@
 namespace faest
 {
 
+namespace detail
+{
+
+// Compute the index of the highest bit in q that is set to 1.
+consteval size_t get_index_of_highest_1(uint64_t q)
+{
+    assert(q > 0);
+    size_t n = 0;
+    while (q >>= 1)
+        ++n;
+    return n;
+}
+
+// Divide X^64 by Q during compile time
+template <uint64_t Q>
+    requires(Q > 0)
+consteval uint64_t div_x64_by_q()
+{
+    uint64_t t = 0;
+    uint64_t p = 0; // p = X^64, but the 64th coefficient is implicit
+    size_t deg_p = 64;
+    const auto deg_q = get_index_of_highest_1(Q);
+    while (deg_p >= deg_q)
+    {
+        const auto deg_diff = deg_p - deg_q;
+        p ^= (Q << deg_diff);
+        t ^= (uint64_t{1} << deg_diff);
+        if (p == 0)
+            break;
+        deg_p = get_index_of_highest_1(p);
+    }
+    return t;
+}
+
+} // namespace detail
+
+// Reduction of a polynomial of degree at most 63 modulo the given polynomial `q_in`
+// and auxialiary value `x64_div_q` which must be X^64 // q.
+ALWAYS_INLINE uint64_t barret_reduce_64_with_x64divq(uint64_t x_in, uint64_t q_in,
+                                                     uint64_t x64_div_q)
+{
+    FAEST_ASSERT(q_in > 0);
+    const auto x = block128::set_low64(x_in);
+    // The modulus polynomial.
+    const auto q = block128::set_low64(q_in);
+    // X^64 // q
+    const auto m = block128::set_low64(x64_div_q);
+    return (x ^ block128::clmul_hl(block128::clmul_ll(x, m), q)).get_low64();
+}
+
+// Reduction of a polynomial of degree at most 63 modulo the given MODULUS polynomial.
+template <uint64_t MODULUS>
+    requires(MODULUS > 0)
+ALWAYS_INLINE uint64_t barret_reduce_64(uint64_t x_in)
+{
+    return barret_reduce_64_with_x64divq(x_in, MODULUS, detail::div_x64_by_q<MODULUS>());
+}
+
 // Reduction of a polynomial of degree at most 63 modulo the GF(256) polynomial.
 inline block128 gf256_barret_reduce_64(block128 x)
 {

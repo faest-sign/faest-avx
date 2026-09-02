@@ -29,4 +29,27 @@ constexpr std::array<uint8_t, 32> vole_commit_tvs<P>::seed = {
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 
+
+#define DECL_VOLE_COMMIT_TVS(P) \
+    template <> decltype(vole_commit_tvs<P>::h) vole_commit_tvs<P>::h; \
+    template <> decltype(vole_commit_tvs<P>::hashed_c) vole_commit_tvs<P>::hashed_c; \
+    template <> decltype(vole_commit_tvs<P>::hashed_u) vole_commit_tvs<P>::hashed_u; \
+    template <> decltype(vole_commit_tvs<P>::hashed_v) vole_commit_tvs<P>::hashed_v; \
+    template <> decltype(vole_commit_tvs<P>::chall) vole_commit_tvs<P>::chall; \
+    template <> decltype(vole_commit_tvs<P>::hashed_q) vole_commit_tvs<P>::hashed_q;
+
+
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_128_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_128_f);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_192_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_192_f);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_256_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_256_f);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_128_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_128_f);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_192_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_192_f);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_256_s);
+DECL_VOLE_COMMIT_TVS(faest::v2::faest_em_256_f);
+
 #endif

@@ -138,3 +138,41 @@ TEMPLATE_TEST_CASE("transpose 1536x", "[transpose]", secpar128_t, secpar192_t, s
 
     REQUIRE(memcmp(out1.data(), out2.data(), out2.size()) == 0);
 }
+
+TEST_CASE("transpose 16Nx16", "[transpose]")
+{
+    constexpr size_t n_blocks = 5;
+
+    // const auto naive_transpose = [](auto& out, const auto& in) {
+    //     //
+    // };
+    const auto input = random_vector<uint8_t>(2 * 16 * n_blocks);
+    auto output = std::vector<uint8_t>(input.size(), 0);
+    auto output2 = std::vector<uint8_t>(input.size(), 0);
+    // auto expected_output = std::vector<uint16_t>(0, input.size());
+    // naive_transpose(output, input);
+    transpose_16Nx16(output.data(), input.data(), n_blocks);
+    transpose_16x16N(output2.data(), output.data(), n_blocks);
+
+    const auto rd_input_bit = [=] (auto row, auto col) {
+        assert(row < 16 * n_blocks);
+        assert(col < 16);
+        return (input[row * 2 + (col / 8)] >> (col % 8)) & 1;
+    };
+    const auto rd_output_bit = [=] (auto row, auto col) {
+        assert(col < 16 * n_blocks);
+        assert(row < 16);
+        return (output[row * 2 * n_blocks + (col / 8)] >> (col % 8)) & 1;
+    };
+
+    REQUIRE(output2 == input);
+    for (size_t r = 0; r < 16; ++r) {
+        INFO("r = " << r);
+        for (size_t c = 0; c < 16 * n_blocks; ++c) {
+            INFO("c = " << c);
+            const auto out = rd_output_bit(r, c);
+            const auto in = rd_input_bit(c, r);
+            REQUIRE(out == in);
+        }
+    }
+}

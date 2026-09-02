@@ -2,6 +2,14 @@ template <> struct block<192>
 {
     uint64_t data[3];
 
+    inline static block192 load(const void* p)
+    {
+        block192 out;
+        memcpy(&out, p, sizeof(out));
+        return out;
+    }
+    inline void store(void* p) const { memcpy(p, &data, sizeof(data)); }
+
     inline block192 operator^(const block192& y) const
     {
         // Plain c version for now at least. Hopefully it will be autovectorized.

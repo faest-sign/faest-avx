@@ -1,0 +1,26 @@
+From b97a7a6fb2ed1321f64aaf95f2d615a88dedf089 Mon Sep 17 00:00:00 2001
+From: Lennart Braun <lbraun@irif.fr>
+Date: Mon, 24 Aug 2026 23:32:23 +0200
+Subject: [PATCH] Fix unaligned load in KeccakP1600times4_AVX2_AddBytes
+
+---
+ lib/low/KeccakP-1600-times4/AVX2/KeccakP-1600-times4-AVX2.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lib/low/KeccakP-1600-times4/AVX2/KeccakP-1600-times4-AVX2.c b/lib/low/KeccakP-1600-times4/AVX2/KeccakP-1600-times4-AVX2.c
+index f36ecaf..afe5016 100644
+--- a/lib/low/KeccakP-1600-times4/AVX2/KeccakP-1600-times4-AVX2.c
++++ b/lib/low/KeccakP-1600-times4/AVX2/KeccakP-1600-times4-AVX2.c
+@@ -104,7 +104,8 @@ void KeccakP1600times4_AVX2_AddBytes(KeccakP1600times4_SIMD256_states *states, u
+     }
+ 
+     while(sizeLeft >= SnP_laneLengthInBytes) {
+-        uint64_t lane = *((const uint64_t*)curData);
++        uint64_t lane = 0;
++        memcpy(&lane, curData, SnP_laneLengthInBytes);
+         statesAsLanes[laneIndex(instanceIndex, lanePosition)] ^= lane;
+         sizeLeft -= SnP_laneLengthInBytes;
+         lanePosition++;
+-- 
+2.55.0
+

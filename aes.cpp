@@ -9,7 +9,7 @@
 namespace faest {
 
 template <secpar S, size_t num_keys, uint32_t num_blocks>
-ALWAYS_INLINE void aes_keygen_impl(
+inline void aes_keygen_impl(
     aes_round_keys<S>* __restrict__ aeses,
     const block_secpar<S>* __restrict__ keys,
     block128* __restrict__ output)

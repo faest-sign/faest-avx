@@ -1,8 +1,10 @@
 #ifndef TEST_TEST_HPP
 #define TEST_TEST_HPP
 
-#include "block.hpp"
+#include "parameters.hpp"
 #include "constants.hpp"
+
+#include "block.hpp"
 #include "debug.hpp"
 #include "faest_keys.inc"
 #include "polynomials.hpp"

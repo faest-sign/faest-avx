@@ -9,7 +9,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-TEMPLATE_TEST_CASE("small vole", "[small vole]", ALL_FAEST_V1_INSTANCES)
+TEMPLATE_TEST_CASE("small vole", "[small vole]", ALL_FAEST_INSTANCES)
 {
     using P = TestType;
     using CP = CONSTANTS<P>;
@@ -18,10 +18,11 @@ TEMPLATE_TEST_CASE("small vole", "[small vole]", ALL_FAEST_V1_INSTANCES)
     const size_t k = 10;
     std::vector<block_secpar<S>> sender_keys(1 << k, block_secpar<S>::set_zero());
     std::vector<block_secpar<S>> receiver_keys(1 << k, block_secpar<S>::set_zero());
-    std::vector<vole_block> u(CP::VOLE_COL_BLOCKS, vole_block::set_all_8(0));
-    std::vector<vole_block> c(CP::VOLE_COL_BLOCKS, vole_block::set_all_8(0));
-    std::vector<vole_block> v(k * CP::VOLE_COL_BLOCKS, vole_block::set_all_8(0));
-    std::vector<vole_block> q(k * CP::VOLE_COL_BLOCKS, vole_block::set_all_8(0));
+    std::vector<vole_block> u(CP::VOLE_COL_BLOCKS, vole_block::set_zero());
+    std::vector<vole_block> c(CP::VOLE_COL_BLOCKS, vole_block::set_zero());
+    std::vector<vole_block> c_receiver(CP::VOLE_CORRECTION_BLOCKS, vole_block::set_zero());
+    std::vector<vole_block> v(k * CP::VOLE_COL_BLOCKS, vole_block::set_zero());
+    std::vector<vole_block> q(k * CP::VOLE_COL_BLOCKS, vole_block::set_zero());
 
     const size_t delta = 42;
     REQUIRE(delta < (1 << k));
@@ -42,42 +43,41 @@ TEMPLATE_TEST_CASE("small vole", "[small vole]", ALL_FAEST_V1_INSTANCES)
     uint32_t tweak = 0xbeef;
 
     vole_sender<P>(k, sender_keys.data(), iv, tweak, u.data(), v.data(), c.data());
-    vole_receiver<P>(k, receiver_keys.data(), iv, tweak, c.data(), q.data(), delta_bytes.data());
-
+    memcpy(c_receiver.data(), c.data(), CP::VOLE_CORRECTION_BYTES);
+    vole_receiver<P>(k, receiver_keys.data(), iv, tweak, c_receiver.data(), q.data(),
+                     delta_bytes.data());
+    // byte vectors holding one column each
     const auto u_vec = std::vector(reinterpret_cast<uint8_t*>(u.data()),
-                                   reinterpret_cast<uint8_t*>(u.data() + CP::VOLE_COL_BLOCKS));
-    REQUIRE(u_vec.size() == CP::VOLE_COL_BLOCKS * sizeof(vole_block));
+                                   reinterpret_cast<uint8_t*>(u.data()) + CP::VOLE_BYTES);
+    const auto c_vec = std::vector(reinterpret_cast<uint8_t*>(c.data()),
+                                   reinterpret_cast<uint8_t*>(c.data()) + CP::VOLE_BYTES);
+    REQUIRE(u_vec.size() == CP::VOLE_BYTES);
+    REQUIRE(c_vec.size() == u_vec.size());
+    std::vector<uint8_t> v_vec;
+    std::vector<uint8_t> q_vec;
+    std::vector<uint8_t> expected_q_vec;
     for (size_t i = 0; i < k; ++i)
     {
-        const auto v_vec = std::vector(
-            reinterpret_cast<uint8_t*>(&v[i * CP::VOLE_COL_BLOCKS]),
-            reinterpret_cast<uint8_t*>(&v[i * CP::VOLE_COL_BLOCKS] + CP::VOLE_COL_BLOCKS));
-        const auto q_vec = std::vector(
-            reinterpret_cast<uint8_t*>(&q[i * CP::VOLE_COL_BLOCKS]),
-            reinterpret_cast<uint8_t*>(&q[i * CP::VOLE_COL_BLOCKS] + CP::VOLE_COL_BLOCKS));
-
-        REQUIRE(v_vec.size() == CP::VOLE_COL_BLOCKS * sizeof(vole_block));
-        REQUIRE(q_vec.size() == CP::VOLE_COL_BLOCKS * sizeof(vole_block));
-        auto q_xor_u_vec = q_vec;
-        REQUIRE(q_xor_u_vec == q_vec);
-        REQUIRE(q_xor_u_vec.size() == u_vec.size());
+        v_vec.assign(reinterpret_cast<uint8_t*>(&v[i * CP::VOLE_COL_BLOCKS]),
+                     reinterpret_cast<uint8_t*>(&v[i * CP::VOLE_COL_BLOCKS]) + CP::VOLE_BYTES);
+        q_vec.assign(reinterpret_cast<uint8_t*>(&q[i * CP::VOLE_COL_BLOCKS]),
+                     reinterpret_cast<uint8_t*>(&q[i * CP::VOLE_COL_BLOCKS]) + CP::VOLE_BYTES);
+        expected_q_vec = v_vec;
+        REQUIRE(v_vec.size() == u_vec.size());
         REQUIRE(q_vec.size() == u_vec.size());
-        for (size_t j = 0; j < q_vec.size(); ++j)
-        {
-            q_xor_u_vec[j] = q_xor_u_vec[j] ^ u_vec[j];
-        }
+        REQUIRE(expected_q_vec.size() == u_vec.size());
         if ((delta >> i) & 1)
         {
-            CHECK(v_vec == q_xor_u_vec);
+            for (size_t j = 0; j < CP::VOLE_CORRECTION_BYTES; ++j)
+                expected_q_vec[j] ^= u_vec[j];
+            for (size_t j = CP::VOLE_CORRECTION_BYTES; j < CP::VOLE_BYTES; ++j)
+                expected_q_vec[j] ^= c_vec[j];
         }
-        else
-        {
-            CHECK(v_vec == q_vec);
-        }
+        CHECK(q_vec == expected_q_vec);
     }
 }
 
-TEMPLATE_TEST_CASE("vole_permute_key_index", "[small vole]", ALL_FAEST_V1_INSTANCES)
+TEMPLATE_TEST_CASE("vole_permute_key_index", "[small vole]", ALL_FAEST_INSTANCES)
 {
     using P = TestType;
     constexpr auto VOLE_WIDTH_SHIFT = P::CONSTS::VOLE_WIDTH_SHIFT;
@@ -91,7 +91,7 @@ TEMPLATE_TEST_CASE("vole_permute_key_index", "[small vole]", ALL_FAEST_V1_INSTAN
     }
 }
 
-TEMPLATE_TEST_CASE("vole_permute_inv_increment", "[small vole]", ALL_FAEST_V1_INSTANCES)
+TEMPLATE_TEST_CASE("vole_permute_inv_increment", "[small vole]", ALL_FAEST_INSTANCES)
 {
     using P = TestType;
     constexpr auto VOLE_WIDTH = P::CONSTS::VOLE_WIDTH;

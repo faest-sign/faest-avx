@@ -3,58 +3,55 @@
 namespace faest
 {
 
-// clang-format off
+#define INST_VOLE_COMMIT_RECONSTRUCT(P)                                                            \
+    template void vole_commit<P>(                                                                  \
+        block_secpar<P::secpar_v> seed, block128 iv, const vole_commit_data<P, false>& data,       \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CORRECTIONS_SIZE> commitment,                    \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CHECK_SIZE> check);                              \
+    template bool vole_reconstruct<P>(                                                             \
+        block128 iv, const vole_commit_data<P, true>& data, const uint8_t* delta_bytes,            \
+        std::span<const uint8_t, P::CONSTS::VOLE_COMMIT_CORRECTIONS_SIZE> commitment,              \
+        std::span<const uint8_t, P::bavc_t::OPEN_SIZE> opening,                                    \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CHECK_SIZE> check);
 
-template void vole_commit<v1::faest_128_s>(block_secpar<v1::faest_128_s::secpar_v>, block128, block_secpar<v1::faest_128_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_128_f>(block_secpar<v1::faest_128_f::secpar_v>, block128, block_secpar<v1::faest_128_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_192_s>(block_secpar<v1::faest_192_s::secpar_v>, block128, block_secpar<v1::faest_192_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_192_f>(block_secpar<v1::faest_192_f::secpar_v>, block128, block_secpar<v1::faest_192_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_256_s>(block_secpar<v1::faest_256_s::secpar_v>, block128, block_secpar<v1::faest_256_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_256_f>(block_secpar<v1::faest_256_f::secpar_v>, block128, block_secpar<v1::faest_256_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_128_s>(block_secpar<v1::faest_em_128_s::secpar_v>, block128, block_secpar<v1::faest_em_128_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_128_f>(block_secpar<v1::faest_em_128_f::secpar_v>, block128, block_secpar<v1::faest_em_128_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_192_s>(block_secpar<v1::faest_em_192_s::secpar_v>, block128, block_secpar<v1::faest_em_192_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_192_f>(block_secpar<v1::faest_em_192_f::secpar_v>, block128, block_secpar<v1::faest_em_192_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_256_s>(block_secpar<v1::faest_em_256_s::secpar_v>, block128, block_secpar<v1::faest_em_256_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v1::faest_em_256_f>(block_secpar<v1::faest_em_256_f::secpar_v>, block128, block_secpar<v1::faest_em_256_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_128_s>(block_secpar<v2::faest_128_s::secpar_v>, block128, block_secpar<v2::faest_128_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_128_f>(block_secpar<v2::faest_128_f::secpar_v>, block128, block_secpar<v2::faest_128_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_192_s>(block_secpar<v2::faest_192_s::secpar_v>, block128, block_secpar<v2::faest_192_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_192_f>(block_secpar<v2::faest_192_f::secpar_v>, block128, block_secpar<v2::faest_192_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_256_s>(block_secpar<v2::faest_256_s::secpar_v>, block128, block_secpar<v2::faest_256_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_256_f>(block_secpar<v2::faest_256_f::secpar_v>, block128, block_secpar<v2::faest_256_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_128_s>(block_secpar<v2::faest_em_128_s::secpar_v>, block128, block_secpar<v2::faest_em_128_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_128_f>(block_secpar<v2::faest_em_128_f::secpar_v>, block128, block_secpar<v2::faest_em_128_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_192_s>(block_secpar<v2::faest_em_192_s::secpar_v>, block128, block_secpar<v2::faest_em_192_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_192_f>(block_secpar<v2::faest_em_192_f::secpar_v>, block128, block_secpar<v2::faest_em_192_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_256_s>(block_secpar<v2::faest_em_256_s::secpar_v>, block128, block_secpar<v2::faest_em_256_s::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
-template void vole_commit<v2::faest_em_256_f>(block_secpar<v2::faest_em_256_f::secpar_v>, block128, block_secpar<v2::faest_em_256_f::secpar_v>* __restrict__, unsigned char* __restrict__, vole_block* __restrict__, vole_block* __restrict__, uint8_t* __restrict__, uint8_t* __restrict__);
+#define INST_CRT_VOLE_COMMIT_RECONSTRUCT(P)                                                        \
+    template void crt_vole_commit<P>(                                                              \
+        block_secpar<P::secpar_v> seed, block128 iv, const vole_commit_data<P, false>& data,       \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CORRECTIONS_SIZE> commitment,                    \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CHECK_SIZE> check,                               \
+        std::span<uint8_t, P::CONSTS::CRT_CMULT_SIZE_BYTES> c_mult);                               \
+    template bool crt_vole_reconstruct<P>(                                                         \
+        block128 iv, const vole_commit_data<P, true>& data, block_secpar<P::secpar_v> delta,       \
+        std::span<const uint8_t, P::CONSTS::VOLE_COMMIT_CORRECTIONS_SIZE> commitment,              \
+        std::span<const uint8_t, P::bavc_t::OPEN_SIZE> opening,                                    \
+        std::span<uint8_t, P::CONSTS::VOLE_COMMIT_CHECK_SIZE> check,                               \
+        std::span<const uint8_t, P::CONSTS::CRT_CMULT_SIZE_BYTES> c_mult);                         \
+    template block_secpar<P::secpar_v> crt_lift_delta<P>(block_secpar<P::secpar_v> delta);
 
-template bool vole_reconstruct<v1::faest_128_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_128_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_192_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_192_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_256_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_256_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_128_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_128_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_192_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_192_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_256_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v1::faest_em_256_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_128_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_128_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_192_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_192_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_256_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_256_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_128_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_128_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_192_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_192_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_256_s>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
-template bool vole_reconstruct<v2::faest_em_256_f>(block128, vole_block* __restrict__, const uint8_t*, const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_128_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_128_s);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_192_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_192_s);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_256_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_256_s);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_128_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_128_s);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_192_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_192_s);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_256_f);
+INST_VOLE_COMMIT_RECONSTRUCT(v2::faest_em_256_s);
 
-// clang-format on
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_128_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_128_s);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_192_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_192_s);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_256_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_256_s);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_128_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_128_s);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_192_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_192_s);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_256_f);
+INST_CRT_VOLE_COMMIT_RECONSTRUCT(v3::faest_em_256_s);
 
 } // namespace faest
